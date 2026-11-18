@@ -1,0 +1,30 @@
+% ==============================================================================
+% ABSTRACT (BAHASA INGGRIS)
+% Sesuai Format Skripsi Kating (FST UNIBA Madura)
+% ==============================================================================
+
+\clearpage
+\phantomsection
+\pagestyle{frontstyle}
+\addcontentsline{toc}{chapter}{\textit{ABSTRACT}}
+
+\begin{center}
+    {\fontsize{14pt}{18pt}\selectfont \bfseries ABSTRACT}
+\end{center}
+
+\vspace{0.8cm}
+
+\noindent
+\skripsiPenulis, Informatics Study Program, Faculty of Science and Technology, \skripsiUniversitas, \dots\ \skripsiTahun, \textit{\skripsiJudulEn}.\\
+Advisors: \skripsiPembimbingSatu\ and \skripsiPembimbingDua.
+
+\vspace{0.6cm}
+
+\begin{singlespace}
+\textit{The advancement of cloud computing and microservices architecture has driven the widespread adoption of Docker-based containerization as the backbone of modern web services. In real-world production environments, backend container clusters often operate under heterogeneous resource capacities due to Linux kernel Control Groups (cgroups) quota allocations or hardware discrepancies. This asymmetric condition introduces critical challenges to load balancers, particularly when handling processor-intensive (CPU-bound) workloads compared to input/output-intensive (I/O-bound) traffic. This study aims to analyze the comparative performance of NGINX and HAProxy data-plane engines across four scheduling algorithm matrices: Round Robin, Least Connections, Weighted Round Robin, and Weighted Least Connections within a heterogeneous backend container cluster. Evaluated performance metrics encompass throughput (requests per second), average response latency, 95th and 99th percentile tail latency, connection error rates, as well as vCPU and memory utilization. The empirical benchmarking results demonstrate that aligning weighted scheduling algorithms with container cgroups quotas significantly mitigates CPU throttling phenomena and prevents tail latency degradation under high concurrency stress.}
+\end{singlespace}
+
+\vspace{0.8cm}
+
+\noindent
+\textit{\textbf{Keywords:} NGINX, HAProxy, Load Balancer, Docker, Heterogeneous Backend, Scheduling Algorithms}

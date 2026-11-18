@@ -1,0 +1,243 @@
+% ==============================================================================
+% BAB II: TINJAUAN PUSTAKA
+% Format mengacu pada Pedoman Skripsi FST UNIBA Madura & Proposal Sempro Terakreditasi
+% ==============================================================================
+
+\chapter{TINJAUAN PUSTAKA}
+
+\section{Penelitian Sebelumnya}
+Kajian terhadap literatur terdahulu dilakukan guna memetakan perkembangan riset, mengevaluasi metodologi yang telah diterapkan, serta menemukan celah ilmiah (\textit{research gap}) yang menjadi dasar kebaruan penelitian ini. Penulis menelaah 11 karya ilmiah rujukan dalam rentang waktu lima tahun terakhir (2022--2026) yang mengkaji evaluasi kinerja penyeimbang beban (\textit{load balancing}), komparasi proksi NGINX dan HAProxy, implementasi algoritma penjadwalan statis maupun dinamis berbobot, serta dampaknya pada lingkungan fisik, mesin virtual, hingga kluster kontainer Docker. Pembahasan literatur terdahulu tersebut dikelompokkan ke dalam tiga domain utama sebagai berikut:
+
+\subsection[Komparasi Mesin Penyeimbang Beban\\NGINX dan HAProxy]{Komparasi Mesin Penyeimbang Beban NGINX dan HAProxy}
+Perbandingan langsung antara dua perangkat lunak penyeimbang beban sumber terbuka paling dominan di industri, yaitu NGINX dan HAProxy, telah menjadi fokus dari sejumlah penelitian empiris. \citet{nurzaman2022analisis} melakukan studi fondasional yang mengomparasikan performa \textit{head-to-head} antara NGINX dan HAProxy pada lingkungan kontainer Docker menggunakan algoritma statis \textit{Round Robin} (RR). Pengujian beban dilakukan menggunakan instrumen \texttt{httperf} pada rentang laju 200 hingga 1.000 permintaan per detik. Temuan empiris mereka mendemonstrasikan keandalan konkurensi HAProxy yang superior dengan tingkat kegagalan koneksi 0\% (tanpa \textit{connection timeout}), sedangkan NGINX mengalami kegagalan waktu tunggu rata-rata mencapai 739,8 permintaan pada laju trafik puncak. Namun, penelitian ini memiliki keterbatasan fundamental karena kontainer \textit{backend} dikonfigurasi secara seragam (homogen), hanya menguji satu algoritma tanpa bobot, serta tidak membedakan karakteristik beban komputasi prosesor versus operasi masukan/keluaran (I/O).
+
+Karakteristik HAProxy dalam mengelola koneksi konkuren tinggi juga diinvestigasi oleh \citet{arini2025perbandingan} pada kluster basis data MySQL InnoDB menggunakan \textit{benchmark} Sysbench pada sistem operasi CentOS. Penelitian tersebut membuktikan bahwa efisiensi pengelolaan \textit{socket} dan manajemen \textit{event-loop} pada HAProxy menghasilkan latensi kueri yang sangat rendah dan utilisasi sumber daya yang stabil. Kendati demikian, fokus kajian mereka terbatas pada lapisan basis data (Layer 4 TCP), bukan pada penanganan trafik HTTP Lapisan Aplikasi (Layer 7). Sementara itu, \citet{mihai2023integrated} mengintegrasikan HAProxy dan NGINX pada sistem manajemen pembelajaran Moodle berbasis kontainer dengan beban kerja tinggi. Meskipun membuktikan ketahanan arsitektur gabungan dalam menopang lonjakan pengguna konkuren, kedua mesin proksi dipasang secara berseri (komplementer) di mana HAProxy bertindak sebagai gerbang terdepan dan NGINX sebagai peladen web perantara, bukan diuji secara bersaing (\textit{head-to-head}) pada kluster yang heterogen.
+
+Pada domain evaluasi arsitektur NGINX, \citet{ikramsyah2025evaluating} menganalisis parameter \textit{Quality of Service} (QoS) meliputi \textit{throughput}, \textit{packet loss}, dan waktu respon pada penyeimbang beban NGINX. Hasil evaluasi menunjukkan bahwa stabilitas NGINX sangat dipengaruhi oleh volume trafik masuk dan pemilihan algoritma penjadwalan. Walaupun memberikan gambaran kinerja QoS pada NGINX, penelitian ini tidak menyertakan pembanding mesin HAProxy, menggunakan infrastruktur peladen yang homogen, dan tidak memisahkan pola beban kerja \textit{CPU-bound} dan \textit{I/O-bound}.
+
+\subsection{Efektivitas Algoritma Penjadwalan Statis dan Berbobot}
+Aspek krusial dalam rekayasa penyeimbang beban adalah penentuan algoritma distribusi trafik. Pada kondisi kluster dengan beban yang dinamis dan heterogen, algoritma statis seperti \textit{Round Robin} kerap memicu ketidakseimbangan antrean beban. \citet{zahir2025analisis} meneliti efisiensi peladen web NGINX dengan membandingkan algoritma \textit{Round Robin} dan \textit{Least Connections} (LC). Hasil eksperimen menunjukkan bahwa algoritma LC menghasilkan stabilitas waktu tanggap yang jauh lebih baik ketika jumlah koneksi klien meningkat, karena algoritma secara adaptif mengalokasikan trafik ke peladen dengan koneksi aktif paling sedikit. Namun, penelitian tersebut masih diuji pada mesin virtual homogen tanpa mempertimbangkan isolasi sumber daya kontainer maupun alokasi bobot kapasitas.
+
+Keunggulan algoritma berbobot (\textit{weighted algorithms}) pada infrastruktur dengan disparitas kapasitas dibuktikan secara empiris oleh \citet{baeturohman2024analisis}. Mereka membandingkan kinerja algoritma \textit{Weighted Round Robin} (WRR) dan \textit{Weighted Least Connections} (WLC) pada NGINX menggunakan peladen virtual heterogen. Hasil penelitian mengungkapkan bahwa WLC memiliki ketahanan yang lebih tinggi dalam mempertahankan \textit{throughput} dan menekan latensi respon selama lonjakan trafik ekstrem dibandingkan WRR, karena WLC mengombinasikan faktor kapasitas teoretis (bobot) dengan jumlah koneksi riil yang sedang ditangani oleh masing-masing node. Penelitian serupa oleh \citet{rizqi2022analisis} pada infrastruktur \textit{Virtual Private Server} (VPS) juga menyimpulkan keunggulan WLC atas WRR dalam meminimalkan penumpukan antrean permintaan pada peladen berdaya rendah. Walaupun demikian, heterogenitas pada kedua penelitian tersebut dilakukan pada tingkat mesin virtual tradisional dan hanya membedakan kapasitas memori (RAM), sedangkan kuota siklus instruksi CPU tetap seragam dan tidak meneliti fenomena \textit{CPU throttling} pada kontainer Docker.
+
+Penerapan algoritma berbobot pada lingkungan kontainer sempat dikaji oleh \citet{rahman2023perbandingan} yang menguji WRR dan WLC pada kluster Docker Swarm untuk layanan pengaliran (\textit{streaming}) video. Meskipun telah memanfaatkan teknologi kontainerisasi, fokus pengujian berorientasi pada metrik \textit{throughput} data video tanpa membedah interaksi mikroarsitektur \textit{data-plane} antara proses \textit{worker} NGINX dan \textit{thread} HAProxy terhadap pembatasan kuota \textit{Control Groups} (cgroups) Linux pada beban kerja mikroservis HTTP.
+
+\subsection{Kinerja Penyeimbang Beban pada Infrastruktur Heterogen dan Kontainerisasi}
+Tantangan nyata pada pusat data dan infrastruktur komputasi \textit{on-premise} modern adalah keberadaan peladen dengan spesifikasi perangkat keras yang heterogen. \citet{faridah2026performance} melakukan evaluasi komparatif enam algoritma \textit{load balancing} (\textit{Round Robin}, \textit{Least Connection}, \textit{Weighted Round Robin}, \textit{Weighted Least Connection}, \textit{IP Hash}, dan \textit{Random}) pada lingkungan peladen fisik \textit{on-premise} homogen dan heterogen menggunakan NGINX Plus dan Apache JMeter. Hasilnya membuktikan secara meyakinkan bahwa algoritma dinamis berbobot, khususnya WLC, menghasilkan \textit{throughput} tertinggi dan waktu tanggap terendah pada peladen heterogen, sekaligus mencegah terjadinya kelebihan beban (\textit{overload}) pada node berdaya rendah. Namun, penelitian ini diimplementasikan pada peladen fisik \textit{bare-metal}, belum menguji HAProxy, serta belum mengevaluasi mekanisme isolasi kontainer Docker dan metrik latensi persentil ekor (\textit{tail latency} p95/p99).
+
+Urgensi penyeimbang beban pada lingkungan berdaya rendah juga dipertegas oleh \citet{ramadhani2026analysis} yang meneliti kinerja kluster peladen berbasis komputer papan tunggal (\textit{single-board computer}) Raspberry Pi untuk sistem informasi pariwisata. Penelitian ini menunjukkan bahwa perangkat keras berdaya rendah sangat rentan terhadap lonjakan konkurensi sehingga memerlukan distribusi beban yang adaptif. Sementara itu, \citet{sudiatmika2023round} meneliti algoritma \textit{Round Robin} pada pusat data nasional dan menekankan pentingnya evaluasi distribusi sebaran latensi respon guna menjaga mutu layanan publik. Namun, pengujian pada kedua studi tersebut masih terbatas pada peladen homogen dan tidak mengevaluasi algoritma berbobot secara komparatif antara NGINX dan HAProxy.
+
+\subsection{Sintesis Posisi Penelitian}
+Berdasarkan telaah mendalam terhadap 11 karya ilmiah rujukan di atas, dapat disimpulkan bahwa penelitian terdahulu masih terfragmentasi: studi yang membandingkan NGINX vs HAProxy pada Docker hanya menguji algoritma tanpa bobot pada node homogen, sedangkan studi yang menguji algoritma berbobot pada node heterogen dilakukan pada mesin virtual tradisional tanpa isolasi kuota prosesor cgroups dan tanpa pemisahan profil beban kerja. Oleh karena itu, penelitian ini memposisikan diri untuk mengisi kesenjangan riset tersebut secara komprehensif melalui evaluasi kinerja \textit{head-to-head} NGINX versus HAProxy dengan empat algoritma penjadwalan pada kluster Docker heterogen di bawah polaritas beban \textit{CPU-bound} dan \textit{I/O-bound}. Pemetaan komparatif posisi penelitian ini secara terperinci disajikan pada Bagian~\ref{sec:kedudukan_penelitian} (\tablename~\ref{tab:kedudukan_penelitian}).
+
+\section{Dasar Teori}
+
+\subsection{Konsep Penyeimbang Beban (Load Balancing)}
+Penyeimbang beban (\textit{load balancer}) adalah komponen arsitektur sistem terdistribusi yang bertindak sebagai gerbang terdepan (\textit{reverse proxy}) dalam mengarahkan dan membagi lalu lintas permintaan HTTP/HTTPS masuk ke sekumpulan peladen komputasi \textit{backend} \citep{buke2026load, sakib2025dynamic, zahir2025analisis}. Beroperasi pada Lapisan Aplikasi (Layer 7 / HTTP) dari model OSI, \textit{load balancer} melakukan inspeksi terhadap paket data masuk, memutus koneksi TCP klien di sisi depan, dan menjalin koneksi baru ke peladen tujuan terpilih di sisi belakang.
+
+Tujuan utama dari pengoperasian \textit{load balancer} meliputi pencegahan kelebihan beban (\textit{overload}) pada satu node tertentu, peningkatan ketersediaan layanan secara menyeluruh (\textit{high availability}), penyediaan mekanisme toleransi kesalahan (\textit{failover}), serta optimalisasi utilisasi sumber daya perangkat keras pada kluster peladen.
+
+\subsection{Algoritma Penjadwalan Distribusi Beban}
+Efektivitas distribusi trafik pada kluster peladen sangat dipengaruhi oleh algoritma penjadwalan yang diterapkan oleh penyeimbang beban \citep{buke2026load, sakib2025dynamic}:
+\begin{enumerate}
+    \item \textbf{Round Robin (RR)}: Algoritma statis paling mendasar yang mendistribusikan setiap permintaan baru secara berurutan melingkar (\textit{cyclic}) ke seluruh node peladen tanpa mempertimbangkan kapasitas sumber daya maupun jumlah beban aktif saat ini.
+    \item \textbf{Least Connections (LC)}: Algoritma dinamis yang mengarahkan setiap permintaan baru ke peladen yang sedang melayani jumlah koneksi aktif paling sedikit pada saat permintaan diterima.
+    \item \textbf{Weighted Round Robin (WRR)}: Pengembangan dari algoritma RR dengan menyematkan nilai bobot integer positif ($w_i$) pada masing-masing peladen ke-$i$. Peladen dengan nilai bobot lebih tinggi akan menerima proporsi permintaan yang lebih banyak secara deterministik. Probabilitas matematis penugasan permintaan ke peladen ke-$i$ dinyatakan dalam Persamaan (\ref{eq:wrr_bab2}):
+    \begin{equation}
+        P_i = \frac{w_i}{\sum_{j=1}^{n} w_j}
+        \label{eq:wrr_bab2}
+    \end{equation}
+    di mana $P_i$ merupakan probabilitas teoretis penugasan beban ke peladen ke-$i$, dan $n$ menyatakan jumlah total peladen aktif di dalam kluster.
+    \item \textbf{Weighted Least Connections (WLC)}: Algoritma dinamis tingkat lanjut yang memadukan nilai bobot kapasitas ($w_i$) dengan jumlah koneksi aktif riil ($C_i$) yang sedang ditangani oleh masing-masing peladen. Peladen terpilih ($S_{\text{selected}}$) adalah peladen yang memiliki rasio koneksi aktif terhadap bobot paling minimum, dirumuskan dalam Persamaan (\ref{eq:wlc_bab2}):
+    \begin{equation}
+        S_{\text{selected}} = \arg\min_{i} \left( \frac{C_i}{w_i} \right)
+        \label{eq:wlc_bab2}
+    \end{equation}
+\end{enumerate}
+
+\subsection{Arsitektur Data-Plane NGINX}
+NGINX menerapkan model arsitektur berbasis banyak proses (\textit{multi-process}) asinkron yang digerakkan oleh peristiwa (\textit{event-driven}) \citep{faridah2026performance}. Struktur data-plane NGINX terdiri atas satu proses utama (\textit{master process}) dan beberapa proses pekerja (\textit{worker processes}) independen. Proses \textit{master} bertugas membaca konfigurasi dan mengelola siklus hidup proses \textit{worker}, sementara seluruh pemrosesan paket jaringan HTTP ditangani secara terisolasi oleh proses-proses \textit{worker}.
+
+Setiap \textit{worker process} mengeksekusi satu \textit{event loop} terpisah yang memanfaatkan fasilitas pemanggilan sistem (\textit{system call}) Linux \texttt{epoll} non-pemblokir (\textit{non-blocking}) untuk menangani ribuan koneksi secara simultan. Namun, karena ruang alamat memori antar-proses di Linux bersifat terisolasi, sinkronisasi status koneksi aktif dan penentuan bobot algoritma antar-worker harus dijembatani melalui zona memori bersama (\textit{shared memory zones} / \texttt{shm}). Pada kondisi konkurensi ekstrem, mekanisme penguncian memori (\textit{mutex locking}) pada zona bersama tersebut dapat menimbulkan persaingan memori (\textit{memory contention}) yang berdampak pada penambahan latensi internal pemrosesan permintaan.
+
+\subsection{Arsitektur Data-Plane HAProxy}
+HAProxy didesain secara khusus sejak awal sebagai penyeimbang beban berkinerja sangat tinggi yang mengadopsi model arsitektur proses tunggal berbasis peristiwa (\textit{event-driven single process}) \citep{tarreau2024haproxy}. Berbeda dari NGINX, HAProxy meniadakan kebutuhan komunikasi antar-proses (IPC) dan penanganan \textit{mutex locking} memori bersama dalam mengelola status antrean koneksi.
+
+Untuk penjadwalan dan penentuan peladen terbaik, HAProxy mengimplementasikan struktur data pohon biner elastis (\textit{Elastic Binary Tree} / \texttt{ebtree}). Struktur pohon biner berbasis kunci terindeks ini memungkinkan operasi penyisipan, pembaruan status beban koneksi, dan pencarian peladen berbeban terendah dieksekusi dengan kompleksitas waktu deterministik $O(1)$ untuk kasus terindeks dan $O(\log N)$ pada penataan antrean \citep{rawls2022load}. Karakteristik ini memberikan determinisme performa yang konsisten, khususnya saat mengelola antrean koneksi di tengah kondisi peladen mengalami degradasi sumber daya komputasi.
+
+\subsection[Kontainerisasi Docker dan Linux cgroups]{Kontainerisasi Docker dan Linux Control Groups (cgroups)}
+Docker mengoperasikan virtualisasi tingkat sistem operasi berbasis kontainer dengan mengandalkan dua fitur inti kernel Linux, yaitu \textit{Namespaces} untuk isolasi ruang pandang sistem dan \textit{Control Groups} (cgroups v2) untuk pembatasan alokasi sumber daya fisik \citep{khan2026decomposing, gurramkonda2026docker}.
+
+Pada subsistem manajemen prosesor, kernel Linux menggunakan penjadwal \textit{Completely Fair Scheduler} (CFS) \citep{shetty2025cpu}. Pembatasan kuota CPU pada kontainer Docker diatur melalui dua parameter cgroups: periode kuota (\texttt{cpu.cfs\_}\allowbreak\texttt{period\_us}, berstandar $100.000\,\mu\text{s}$ atau $100\,\text{ms}$) dan batas alokasi kuota eksekusi (\texttt{cpu.cfs\_}\allowbreak\texttt{quota\_us}). Ketika proses di dalam kontainer mengonsumsi waktu prosesor yang melebihi batas kuota dalam satu siklus, kernel Linux secara otomatis memberlakukan pemotongan jatah waktu CPU (\textit{CPU throttling}) \citep{shetty2025cpu}. Pemotongan ini membekukan eksekusi proses kontainer hingga siklus cgroups berikutnya, yang memicu lonjakan antrean soket jaringan dan latensi secara tajam pada sisi klien.
+
+\subsection[Karakteristik Beban Kerja CPU-Bound dan I/O-Bound]{Karakteristik Beban Kerja Komputasi (CPU-Bound vs. I/O-Bound)}
+Layanan web modern melayani spektrum beban kerja dengan karakteristik komputasi yang sangat kontras:
+\begin{enumerate}
+    \item \textbf{Beban Intensif Prosesor (CPU-Bound)}: Beban kerja yang didominasi oleh operasi aritmatika, kalkulasi algoritma, atau pemrosesan data (seperti komputasi deret rekursif Fibonacci). Karakteristik beban ini memforsir siklus instruksi CPU secara kontinu, sehingga sangat cepat menguras kuota waktu CFS dan memicu \textit{CPU throttling} pada kontainer berkapasitas rendah.
+    \item \textbf{Beban Intensif Masukan/Keluaran (I/O-Bound)}: Beban kerja yang didominasi oleh operasi tunggu jaringan atau akses penyimpanan (seperti kueri basis data atau jeda simulasi I/O non-pemblokir). Karakteristik beban ini tidak menguras siklus CPU, melainkan menguji kapasitas penanganan antrean soket jaringan konkuren dan ketahanan memori penyeimbang beban saat ribuan koneksi tertahan dalam kondisi terbuka (\textit{keep-alive}).
+\end{enumerate}
+Pemisahan kedua karakteristik ini mutlak diperlukan dalam evaluasi komparatif guna memetakan korelasi kausal antara logika algoritma penjadwalan dan sifat konsumsi sumber daya sistem.
+
+\subsection{Pengujian Beban Terdistribusi dengan Grafana k6}
+Grafana k6 adalah instrumen pengujian beban (\textit{load testing}) modern bersumber terbuka yang dibangun menggunakan bahasa pemrograman Go \citep{k6docs2024, sudiatmika2023round}. Berbeda dengan instrumen berbasis JVM seperti Apache JMeter yang membebankan \textit{thread} sistem operasi untuk setiap pengguna virtual, k6 mengeksekusi model konkurensi \textit{goroutine} ringan yang sangat efisien dalam penggunaan memori dan siklus prosesor mesin penguji.
+
+Grafana k6 mendukung otomasi pengujian berbasis skrip JavaScript ES6, tahapan pembebanan dinamis (\textit{ramping stages}), serta pencatatan metrik performa beresolusi tinggi hingga skala mikrodetik untuk persentil latensi ekor.
+
+\subsection{Metrik Evaluasi Kinerja Sistem}
+Evaluasi kinerja komparatif sistem diukur menggunakan enam parameter kuantitatif terstandarisasi:
+\begin{enumerate}
+    \item \textbf{Throughput}: Kuantitas permintaan HTTP yang berhasil diproses dan diselesaikan secara tuntas per satuan waktu, dinyatakan dalam \textit{Requests Per Second} (RPS).
+    \item \textbf{Latensi Rerata (Mean Latency)}: Rata-rata waktu tempuh bolak-balik (\textit{Round Trip Time} / RTT) yang dihitung sejak paket permintaan HTTP dikirimkan oleh mesin uji hingga paket respon pertama diterima kembali secara utuh.
+    \item \textbf{Tail Latency (Persentil p95 dan p99)}: Waktu respon pada titik persentil ke-95 dan ke-99 dari total distribusi permintaan yang berhasil diselesaikan \citep{wodislawski2026ponytail, li2025tailbench}. Metrik ini krusial dalam mendeteksi degradasi performa ekstrem yang kerap tersembunyi oleh metrik rata-rata pada sistem heterogen. Rasio amplifikasi latensi ekor dinyatakan dalam Persamaan (\ref{eq:rtail_bab2}):
+    \begin{equation}
+        R_{\text{tail}} = \frac{L_{p99}}{L_{\text{mean}}}
+        \label{eq:rtail_bab2}
+    \end{equation}
+    di mana $L_{p99}$ adalah waktu respon persentil ke-99 dan $L_{\text{mean}}$ adalah waktu respon rata-rata. Nilai $R_{\text{tail}} > 1$ mengindikasikan tingkat ketimpangan latensi ekstrem yang dialami sebagian pengguna.
+    \item \textbf{Tingkat Kegagalan (Error Rate)}: Persentase kegagalan pemrosesan permintaan dibandingkan total permintaan yang dikirimkan, mencakup respon kesalahan peladen (kode status HTTP 5xx) dan kegagalan waktu tunggu soket (\textit{connection timeout}):
+    \begin{equation}
+        E = \frac{N_{\text{gagal}}}{N_{\text{total}}} \times 100\%
+        \label{eq:error_rate_bab2}
+    \end{equation}
+    \item \textbf{Audit Presisi Distribusi Beban (MAPE)}: Derajat kedekatan antara persentase jumlah permintaan aktual yang diterima oleh masing-masing kontainer (\textit{log audit}) terhadap rasio kapasitas kuota teoretisnya, diukur menggunakan formulasi \textit{Mean Absolute Percentage Error} (MAPE):
+    \begin{equation}
+        \text{MAPE} = \frac{1}{n} \sum_{i=1}^{n} \left| \frac{R_i^{\text{aktual}} - R_i^{\text{teoretis}}}{R_i^{\text{teoretis}}} \right| \times 100\%
+        \label{eq:mape_bab2}
+    \end{equation}
+    di mana $R_i^{\text{aktual}}$ adalah persentase trafik riil yang tercatat pada log akses kontainer ke-$i$, dan $R_i^{\text{teoretis}}$ adalah persentase bobot alokasi idealnya.
+\end{enumerate}
+
+\section{Kedudukan Penelitian}
+\label{sec:kedudukan_penelitian}
+
+\subsection{Sintesis dan Matriks Pemetaan Posisi Penelitian}
+Berdasarkan telaah mendalam terhadap 11 penelitian rujukan utama dalam rentang tahun 2022 hingga 2026, belum ditemukan studi yang secara komprehensif mengintegrasikan perbandingan mesin penyeimbang beban, matriks algoritma berbobot, kluster kontainer Docker berkapasitas heterogen, pemisahan polaritas beban kerja, serta pengukuran metrik latensi persentil. Matriks pemetaan posisi penelitian ini dibandingkan dengan literatur rujukan disajikan pada \tablename\ \ref{tab:kedudukan_penelitian}.
+
+\begin{table}[H]
+    \centering
+    \caption{Matriks Pemetaan Posisi dan Kebaruan Penelitian}
+    \label{tab:kedudukan_penelitian}
+    \small
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.8cm}|*{5}{>{\centering\arraybackslash}X|}}
+        \hline
+        \rowcolor[gray]{0.85}
+        \textbf{Peneliti \& Tahun} & \textbf{NGINX vs HA} & \textbf{4 Algoritma} & \textbf{Docker Het.} & \textbf{Beban CPU/IO} & \textbf{Tail Latency} \\
+        \hline
+        \citet{faridah2026performance} & Tidak & Sebagian & Tidak & Tidak & Tidak \\
+        \hline
+        \citet{ramadhani2026analysis}  & Tidak & Tidak    & Tidak & Tidak & Tidak \\
+        \hline
+        \citet{zahir2025analisis}      & Tidak & Tidak    & Tidak & Tidak & Tidak \\
+        \hline
+        \citet{ikramsyah2025evaluating}& Tidak & Tidak    & Tidak & Tidak & Tidak \\
+        \hline
+        \citet{arini2025perbandingan}  & Tidak & Tidak    & Tidak & Khusus DB & Tidak \\
+        \hline
+        \citet{baeturohman2024analisis}& Tidak & Sebagian & Tidak (VM) & Tidak & Tidak \\
+        \hline
+        \citet{rahman2023perbandingan} & Tidak & Sebagian & Tidak & Streaming & Tidak \\
+        \hline
+        \citet{mihai2023integrated}    & Berurutan & Tidak & Sebagian & Moodle & Tidak \\
+        \hline
+        \citet{sudiatmika2023round}    & Tidak & Tidak    & Tidak & Tidak & Sebagian \\
+        \hline
+        \citet{rizqi2022analisis}      & Tidak & Sebagian & Sebagian (VPS) & Tidak & Tidak \\
+        \hline
+        \citet{nurzaman2022analisis}   & Ya    & Tidak (RR) & Tidak & Tidak & Tidak \\
+        \hline
+        \rowcolor[gray]{0.92}
+        \textbf{Penelitian Ini}        & \textbf{Ya} & \textbf{Ya (4 Alg)} & \textbf{Ya (cgroups)} & \textbf{Ya (Terpisah)} & \textbf{Ya (p95 \& p99)} \\
+        \hline
+    \end{tabularx}
+
+\end{table}
+
+\subsection{Identifikasi Kesenjangan Riset (Research Gaps)}
+Berdasarkan telaah komparatif pada \tablename\ \ref{tab:kedudukan_penelitian}, teridentifikasi empat kesenjangan riset (\textit{research gaps}) fundamental yang menjadi landasan orisinalitas penelitian ini:
+\begin{enumerate}
+    \item \textbf{Asumsi Homogenitas pada Docker vs. Heterogenitas Parsial pada Mesin Virtual}: Penelitian terdahulu yang membandingkan performa NGINX dan HAProxy secara langsung di lingkungan Docker \citep{nurzaman2022analisis} seluruhnya mengonfigurasi kontainer berkapasitas identik (homogen) dan hanya menguji algoritma tanpa bobot (\textit{Round Robin}). Sebaliknya, penelitian yang menguji peladen heterogen dengan algoritma berbobot \citep{baeturohman2024analisis, rizqi2022analisis} dilakukan di atas mesin virtual tradisional (VirtualBox/VPS) tanpa memperhitungkan mekanisme isolasi kuota prosesor berbasis \textit{Control Groups} (cgroups) kernel Linux. Fenomena kritis di mana kontainer kecil mengalami pemotongan waktu eksekusi (\textit{CPU throttling}) saat jatah kuota habis belum pernah dipetakan secara komparatif antara NGINX dan HAProxy.
+    \item \textbf{Kebutaan terhadap Dikotomi Karakteristik Beban Kerja (CPU-Bound vs. I/O-Bound)}: Sebagian besar literatur membebani kluster peladen web menggunakan profil trafik tunggal yang seragam. Pendekatan ini mengaburkan korelasi kausal antara logika pemilihan peladen dan sifat konsumsi sumber daya. Beban kerja \textit{CPU-bound} menguras siklus instruksi prosesor dan memicu penalti penjadwalan CFS kernel, sedangkan beban \textit{I/O-bound} menahan soket jaringan terbuka tanpa konsumsi CPU tinggi. Belum ada penelitian yang membedah ketahanan mikroarsitektur antrean kedua penyeimbang beban terhadap polaritas karakteristik beban ini pada kluster heterogen.
+    \item \textbf{Fragmentasi Matriks Pengujian dan Absennya Audit Presisi Proporsi Aktual}: Literatur yang menguji komparasi NGINX vs HAProxy belum menerapkan algoritma berbobot secara lengkap (WRR dan WLC), sedangkan literatur yang mengkaji algoritma berbobot hanya meneliti satu jenis perangkat lunak (NGINX). Selain itu, belum ada penelitian empiris yang melakukan audit kuantitatif terhadap \textit{log} akses kontainer guna memvalidasi apakah proporsi distribusi trafik aktual benar-benar presisi mengikuti rasio alokasi cgroups saat terjadi kejenuhan beban.
+    \item \textbf{Bias Penggunaan Nilai Rata-rata (\textit{Average Bias})}: Mayoritas riset terdahulu hanya menyajikan nilai rata-rata (\textit{mean latency}). Pada kluster dengan disparitas kapasitas, nilai rata-rata memberikan ilusi performa karena waktu respon cepat dari kontainer berdaya tinggi menutupi kelambatan ekstrem yang dialami permintaan yang terjebak di antrean kontainer kecil. Oleh sebab itu, evaluasi berbasis persentil ke-95 (p95) dan ke-99 (p99) menjadi mutlak untuk menangkap degradasi nyata yang dialami pengguna.
+\end{enumerate}
+
+\subsection{Pernyataan Kebaruan (Novelty Statement)}
+Berpijak pada empat kesenjangan riset tersebut, kebaruan (\textit{novelty}) yang dihadirkan dalam penelitian ini dirumuskan sebagai berikut:
+\begin{quote}
+    \textit{"Evaluasi komparatif komprehensif performa lapisan data-plane NGINX versus HAProxy dengan matriks empat algoritma penjadwalan (Round Robin, Least Connections, Weighted Round Robin, dan Weighted Least Connections) pada kluster kontainer Docker dengan kapasitas asimetris berbasis cgroups Linux, melalui pemisahan tegas karakteristik beban kerja CPU-bound dan I/O-bound, pengukuran metrik latensi ekor (tail latency p95 dan p99) menggunakan Grafana k6, serta audit presisi proporsi distribusi beban aktual (MAPE)."}
+\end{quote}
+
+\subsection{Kerangka Berpikir Penelitian}
+Kerangka berpikir penelitian disusun secara sistematis untuk menghubungkan latar belakang permasalahan, kesenjangan literatur, perancangan matriks eksperimen, hingga luaran yang ditargetkan. Alur kerangka berpikir penelitian ini diilustrasikan pada \figurename\ \ref{fig:kerangka_berpikir}.
+
+\begin{figure}[H]
+    \centering
+    \singlespacing
+    \begin{tikzpicture}[
+        node distance=0.35cm and 1.0cm,
+        box/.style={
+            rectangle,
+            draw=black!80,
+            fill=gray!10,
+            thick,
+            rounded corners=3pt,
+            text width=12.5cm,
+            align=left,
+            inner sep=3.5pt,
+            font=\footnotesize
+        },
+        arrow/.style={
+            -{Stealth[length=2.0mm]},
+            thick,
+            draw=black!80
+        }
+    ]
+        % Node 1: Masalah Utama
+        \node[box] (masalah) {
+            \textbf{1. Masalah Utama dan Tantangan Nyata:}\\
+            Asimetri sumber daya (\textit{hardware heterogeneity}) pada lingkungan kontainer Docker memicu \textit{CPU throttling} pada kontainer kecil saat menerima beban tinggi, menimbulkan lonjakan latensi ekor (\textit{tail latency}) dan kegagalan koneksi jika beban tidak didistribusikan secara proporsional.
+        };
+
+        % Node 2: Kesenjangan Riset
+        \node[box, below=of masalah] (gap) {
+            \textbf{2. Identifikasi Kesenjangan Riset (Research Gaps):}\\
+            $\bullet$ Evaluasi NGINX vs HAProxy di Docker terpaku pada kluster homogen tanpa algoritma bobot.\\
+            $\bullet$ Belum ada pengujian terpisah antara karakteristik beban \textit{CPU-bound} versus \textit{I/O-bound}.\\
+            $\bullet$ Minimnya evaluasi metrik \textit{tail latency} (p95 dan p99) serta absennya audit presisi distribusi beban.
+        };
+
+        % Node 3: Solusi Eksperimental
+        \node[box, below=of gap] (solusi) {
+            \textbf{3. Rancangan Eksperimental Komparatif:}\\
+            $\bullet$ \textbf{Matriks Komparasi}: 2 Mesin Proksi (NGINX vs HAProxy) $\times$ 4 Algoritma (RR, LC, WRR, WLC).\\
+            $\bullet$ \textbf{Lingkungan Backend}: Kluster Docker Heterogen 1:2:4 core CPU dan RAM via cgroups Linux.\\
+            $\bullet$ \textbf{Pemisahan Beban}: Beban \textit{CPU-bound} (Fibonacci rekursif) dan \textit{I/O-bound} (jeda non-pemblokir).
+        };
+
+        % Node 4: Pengujian Beban
+        \node[box, below=of solusi] (uji) {
+            \textbf{4. Pengujian Beban dan Pengukuran Metrik (Grafana k6):}\\
+            $\bullet$ Simulasi beban bertingkat (\textit{ramping}) dari 50 hingga 1.000 pengguna virtual (\textit{Virtual Users}).\\
+            $\bullet$ Ekstraksi metrik kuantitatif: \textit{Throughput} (RPS), Rerata Latensi, \textit{Tail Latency} (p95 dan p99).\\
+            $\bullet$ Pengukuran \textit{Error Rate} (HTTP 5xx \& \textit{timeout}) dan Audit Presisi Distribusi Beban (MAPE).
+        };
+
+        % Node 5: Luaran Penelitian
+        \node[box, below=of uji] (output) {
+            \textbf{5. Luaran yang Diharapkan (\textit{Expected Outcomes}):}\\
+            $\bullet$ Pemetaan kausal empiris interaksi mikroarsitektur antrean NGINX vs HAProxy terhadap \textit{cgroups}.\\
+            $\bullet$ Panduan rekomendasi konfigurasi algoritma dan penyeimbang beban optimal untuk arsitektur heterogen.\\
+            $\bullet$ Data patokan (\textit{benchmark}) kinerja latensi ekor web service pada lingkungan kluster kontainer.
+        };
+
+        % Arrows
+        \draw[arrow] (masalah) -- (gap);
+        \draw[arrow] (gap) -- (solusi);
+        \draw[arrow] (solusi) -- (uji);
+        \draw[arrow] (uji) -- (output);
+    \end{tikzpicture}
+    \caption{Kerangka Berpikir Penelitian}
+    \label{fig:kerangka_berpikir}
+\end{figure}
+
+Berdasarkan \figurename\ \ref{fig:kerangka_berpikir}, alur penalaran penelitian diawali dari permasalahan asimetri kapasitas pada kluster kontainer Docker yang berpotensi memicu degradasi latensi ekstrem saat beban kerja tinggi. Berangkat dari identifikasi empat kesenjangan riset pada literatur ilmiah terkini, dirancanglah sebuah kerangka eksperimen komparatif terpadu yang memadukan dua mesin proksi utama (NGINX dan HAProxy) dengan empat algoritma distribusi beban pada kluster \textit{backend} heterogen dengan rasio 1:2:4 berbasis cgroups Linux. Eksperimen diuji di bawah dua polaritas beban kerja (CPU-bound dan I/O-bound) menggunakan instrumen Grafana k6 untuk mengekstrak data performa secara presisi, sehingga menghasilkan luaran berupa bukti empiris kausal, rekomendasi konfigurasi optimal, dan basis data patokan kinerja sistem.

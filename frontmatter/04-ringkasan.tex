@@ -1,0 +1,30 @@
+% ==============================================================================
+% ABSTRAK (BAHASA INDONESIA)
+% Sesuai Format Skripsi Kating (FST UNIBA Madura)
+% ==============================================================================
+
+\clearpage
+\phantomsection
+\pagestyle{frontstyle}
+\addcontentsline{toc}{chapter}{ABSTRAK}
+
+\begin{center}
+    {\fontsize{14pt}{18pt}\selectfont \bfseries ABSTRAK}
+\end{center}
+
+\vspace{0.8cm}
+
+\noindent
+\skripsiPenulis, Program Studi \skripsiProdi, \skripsiFakultas, \skripsiUniversitas, \dots\ \skripsiTahun, \textit{\skripsiJudul}.\\
+Dosen Pembimbing: \skripsiPembimbingSatu\ dan \skripsiPembimbingDua.
+
+\vspace{0.6cm}
+
+\begin{singlespace}
+Perkembangan teknologi komputasi awan dan arsitektur \textit{microservices} telah mendorong pemanfaatan kontainerisasi berbasis Docker sebagai tulang punggung penyedia layanan \textit{web service} modern. Dalam operasional lingkungan produksi sesungguhnya, kluster kontainer sering kali berada dalam kondisi kapasitas sumber daya yang heterogen akibat pembatasan kuota \textit{Control Groups} (cgroups) kernel Linux maupun ketimpangan spesifikasi perangkat keras. Kondisi asimetris ini menimbulkan tantangan krusial pada penyeimbang beban (\textit{load balancer}), khususnya ketika melayani karakteristik beban kerja intensif prosesor (\textit{CPU-bound}) dibandingkan beban kerja intensif masukan/keluaran (\textit{I/O-bound}). Penelitian ini bertujuan untuk menganalisis perbandingan kinerja data-plane NGINX dan HAProxy menggunakan empat matriks algoritma penjadwalan distribusi beban: \textit{Round Robin}, \textit{Least Connections}, \textit{Weighted Round Robin}, dan \textit{Weighted Least Connections} pada kluster backend heterogen. Parameter evaluasi yang diukur mencakup \textit{throughput} (req/s), rerata latensi respon, \textit{tail latency} persentil p95 dan p99, persentase kegagalan koneksi (\textit{error rate}), serta utilisasi vCPU dan RAM. Hasil benchmarking empiris menunjukkan bahwa kesesuaian antara penentuan bobot algoritma (\textit{weighted}) dengan alokasi kuota cgroups kontainer secara signifikan mampu mengeliminasi fenomena \textit{CPU throttling} dan menekan lonjakan latensi ekor pada beban konkurensi tinggi.
+\end{singlespace}
+
+\vspace{0.8cm}
+
+\noindent
+\textbf{Kata Kunci:} NGINX, HAProxy, Load Balancer, Docker, Backend Heterogen, Algoritma Penjadwalan

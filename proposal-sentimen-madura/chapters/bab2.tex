@@ -1,0 +1,204 @@
+% ==============================================================================
+% BAB II: TINJAUAN PUSTAKA DAN LANDASAN TEORI
+% Proposal Skripsi: Evaluasi Generalisasi Lintas Domain Model Analisis Sentimen Bahasa Madura
+% Penulis: Muhammad Syawqi Muhtadabillah (NIM: 2302310276)
+% ==============================================================================
+
+\chapter{TINJAUAN PUSTAKA DAN LANDASAN TEORI}
+
+\section{Penelitian Terdahulu}
+
+Penelitian tentang Pemrosesan Bahasa Alami (\textit{Natural Language Processing} / NLP) untuk bahasa daerah yang sumber dayanya masih terus berkembang. Beberapa tahun terakhir, banyak penelitian mulai membahas penggunaan NLP untuk melakukan analisis sentimen, penyesuaian model bahasa pralatih, serta pengolahan teks bahasa daerah yang di ambil dari media sosial. Bagian ini membahas beberapa penelitian terdahulu yang berkaitan dengan topik tersebut sebagai bahan untuk melihat perkembangan penelitian dan menemukan keterkaitannya dengan penelitian yang dilakukan.
+
+Salah satu peneleitian yang menjadi dasar pengembangan dataset bahasa daerah di indonesia dilakukan oleh \citet{winata2023nusax} melalui penyusunan dataset NusaX. Dataset ini mencakup 10 bahasa daerah di Indonesia (termasuk bahasa Madura, Jawa, Sunda, Bali, Minangkabau, dan Bugis) dengan 1.000 data yang dibagi ke dalam tiga label sentimen (positif, netral, dan negatif). Pengujian \citet{winata2023nusax} membuktikan bahwa model multibahasa seperti XLM-RoBERTa mampu mencapai skor Macro F1 sebesar 75\% hingga 85\% pada dataset NusaX. Namun, datasetNusaX dibangun melalui proses penerjemahan manual dari ulasan daring berbahasa Indonesia, sehingga struktur kalimatnya relatif baku. \citet{winata2023nusax} belum membahas bagaimana kinerja model saat digunakan untuk mengklasifikasikan sentimen pada komentar media sosial di luar dataset NusaX, khususnya komentar TikTok berbahasa Madura.
+
+\citet{aji2022one} Menjelaskan bahwa pengembangan NLP untuk bahasa daerah di Indonesia masih mengalami keterbatasan data teks digital. Dari 718 bahasa daerah yang ada di Indonesia, sebagian besar masih mengalami keterbatasan data teks digital, alat untuk menyesuaikan kata, serta data yang dapat digunakan dalam pengembangan dari model bahasa. Untuk mengatasi permasalahan tersebut beberapa peneliti mengembangkan data NLP melalui NusaWrites \citep{cahyawijaya2023nusawrites} dan NusaCrowd \citep{cahyawijaya2023nusacrowd} agar dapat mengakses ratusan data bahasa daerah yang ada di indonesia secara terbuka. Penelitian juga dilakukan pada pengembangan model Indo4B \citep{cahyawijaya2021indo4b} dan NusaBERT \citep{wongso2024nusabert} Berbagai penelitian tersebut menunjukkan adanya upaya untuk mengembangkan teknologi pemrosesan bahasa yang dapat menangani keberagaman bahasa di Indonesia.
+
+Penelitian yang berkaitan dengan bahasa Madura, \citet{firmansyah2021klasifikasi} mengembangkan sistem penandaan kelas kata bahasa Madura menggunakan algoritma Viterbi. Penelitian tersebut membahas karakteristik bahasa Madura, terutama pada penggunaan imbuhan, dan adanya pengulangan kata yang dapat mempengaruhi proses pengolahan teks. Selain itu, \citet{arifin2026heuristic} membahas penggunaan bahasa informal Madura di media sosial. Penelitian tersebut mengembangkan pendekatan berbasis aturan untuk mewajarkan kata-kata yang tidak baku yang sering digunakan di media sosial. \citet{arifin2026heuristic} membuktikan bahwa pengguna bahasa Madura di media sosial memiliki variasi kata yang cukup beragam dan banyak kata yang tidak baku, yang menjadi kendala bagi algoritma saat memecah teks.
+
+Penelitian tentang analisis sentimen pada komentar TikTok juga dilakukan oleh \citet{luther2026analisis}. Penelitian tersebut menggunakan model XLM-RoBERTa yang dikombinasikan dengan kamus daerah dan algoritma CatBoost untuk menganalisis komentar pada konten lokal. Hasil penelitian menunjukkan bahwa penggunaan XLM-RoBERTa dapat membantu proses analisis sentimen pada teks multibahasa, meskipun penggunaan kata-kata gaul lokal masih menjadi salah satu hal yang perlu diperhatikan. \citet{setiawan2023sentiment} juga melakukan penelitian tentang analisis sentimen ulasan TikTok berbahasa Indonesia menggunakan model bahasa yang di sesuaikan untuk media sosial, serta \citet{saputra2026reaksi} juga menganalisis sentimen terhadap komentar publik TikTok terhadap kebijakan pemerintah menggunakan model Transformer. Karakteristik teks media sosial Indonesia yang banyak menggunakan singkatan dan istilah gaul juga dibuktikan oleh \citet{koto2021indobertweet} melalui pengembangan IndoBERTweet.
+
+\citet{aribowo2021cross} melakukan penelitian analisis sentimen pada komentar YouTube berbahasa Indonesia untuk melihat pengaruh perbedaan domain terhadap hasil klasifikasi. Penelitian tersebut menunjukkan bahwa perbedaan karakteristik teks antarplatform dapat mempengaruhi hasil kinerja model. Selanjutnya, \citet{zulkifli2025indonesian} membahas penyesuaian model pada teks dari beberapa platform menggunakan metode \textit{Domain Adversarial Neural Networks} (DANN). Sementara itu, Penelitian lain yang berkaitan dengan transfer model pada bahasa daerah dilakukan oleh \citet{darnoto2026language}. Meneliti tentang transfer model menggunakan metode \textit{Language-Similarity-Guided Transfer Fine-Tuning} pada 12 bahasa daerah di Indonesia. Hasil dari penelitian tersebut menunjukkan bahwa kemiripan bahasa, baik dari segi kosakata maupun struktur bahasa, dapat mempengaruhi keberhasilan proses transfer model Transformer.
+
+Berdasarkan beberapa penelitian terdahulu yang telah di bahas sebelumnya di atas, belum ditemukan adanya penelitian yang membahas evaluasi sentimen bahasa Madura dengan generalisasi lintas domain model XLM-RoBERTa dari dataset NusaX ke teks komentar TikTok berbahasa Madura, dan menganalisis adaptasi data bertahap dari 10\%, 25\%, 50\%, hingga 100\%)yang dikelompokkan dengan analisis kesalahan model dalam memahami karakteristik bahasa Madura. Perbandingan antara penelitian terdahulu dan penelitian ini disajikan pada \tablename~\ref{tab:sota}.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.8cm}|*{5}{>{\centering\arraybackslash}X|}}
+        \hline
+        \rowcolor[gray]{0.85}
+        \textbf{Peneliti \& Tahun} & \textbf{Bahasa Madura} & \textbf{Teks TikTok / Medsos} & \textbf{Model Arsitektur} & \textbf{Adaptasi Bertahap} & \textbf{Analisis Kesalahan Model} \\
+        \hline
+        \citet{winata2023nusax}        & Ya       & Tidak          & XLM-R / IndoBERT & Tidak          & Tidak \\
+        \hline
+        \citet{aji2022one}             & Sebagian & Tidak          & Multibahasa     & Tidak          & Sebagian \\
+        \hline
+        \citet{firmansyah2021klasifikasi} & Ya    & Tidak          & Viterbi POS     & Tidak          & Tidak \\
+        \hline
+        \citet{arifin2026heuristic}    & Ya       & Ya (Slang)     & Heuristik       & Tidak          & Ya (Slang) \\
+        \hline
+        \citet{darnoto2026language}    & Sebagian & Tidak          & Transformer     & Ya (Transfer)  & Tidak \\
+        \hline
+        \citet{luther2026analisis}     & Tidak    & Ya (TikTok)    & XLM-R + CatBoost& Tidak          & Tidak \\
+        \hline
+        \citet{aribowo2021cross}       & Tidak    & Ya (YouTube)   & Cross-Domain    & Sebagian       & Tidak \\
+        \hline
+        \citet{zulkifli2025indonesian} & Tidak    & Ya (Platform)  & DANN Transfer   & Ya (Cross)     & Tidak \\
+        \hline
+        \citet{syauri2026analisis}     & Tidak    & Ya (Medsos)    & NusaBERT        & Sebagian       & Tidak \\
+        \hline
+        \citet{setiawan2023sentiment}  & Tidak    & Ya (TikTok)    & IndoBERTweet    & Tidak          & Tidak \\
+        \hline
+        \rowcolor[gray]{0.92}
+        \textbf{Penelitian Ini}        & \textbf{Ya} & \textbf{Ya (TikTok)} & \textbf{XLM-RoBERTa} & \textbf{Ya (10\%--100\%)} & \textbf{Ya (4 Dimensi)} \\
+        \hline
+    \end{tabularx}
+    \caption{Matriks Pemetaan Posisi dan Kebaruan Penelitian}
+    \label{tab:sota}
+\end{table}
+
+Berdasarkan pemetaan komparatif pada \tablename~\ref{tab:sota}, kebaruan penelitian ini terletak pada integrasi arsitektur model XLM-RoBERTa untuk korpus komentar media sosial TikTok berbahasa Madura yang dievaluasi melalui skenario adaptasi data bertahap serta analisis kesalahan linguistik mendalam pada empat dimensi kebahasaan.
+
+\section{Landasan Teori}
+
+Landasan teori ini membahas konsep dasar, arsitektur model, serta rumus matematis yang digunakan sebagai dasar dalam penelitian ini.
+
+\subsection{Analisis Sentimen Teks Digital Media Sosial}
+
+Analisis sentimen (\textit{sentiment analysis}) atau penambangan opini (\textit{opinion mining}) merupakan salah satu cabang dalam pemrosesan bahasa alami yang bertujuan untuk mengidentifikasi, mengekstraksi, dan mengklasifikasikan orientasi afektif dalam teks digital. Proses ini digunakan untuk memetakan kecenderungan opini dan persepsi publik ke dalam kategori polaritas afektif, yaitu sentimen positif, netral, atau negatif \citep{aribowo2021cross, setiawan2023sentiment}. Secara matematis, tugas klasifikasi sentimen dimodelkan sebagai fungsi pemetaan dari sebuah sekuens teks masukan $\mathbf{x} = (w_1, w_2, \dots, w_n)$ ke dalam sebuah ruang kategori sentimen diskret $y \in \mathcal{Y}$. Pada penelitian ini, ruang kelas target didefinisikan dalam tiga kelas, yaitu $\mathcal{Y} = \{\text{Positif, Netral, Negatif}\}$.
+
+Pada arsitektur klasifikasi berbasis jaringan saraf, model menghitung distribusi probabilitas kemunculan kelas sentimen melalui fungsi posterior $P(y \mid \mathbf{x}; \theta)$, di mana $\theta$ merepresentasikan parameter bobot model terpelajar. Keputusan kelas prediksi akhir $\hat{y}$ ditentukan dengan memilih kategori sentimen yang memiliki nilai peluang tertinggi melalui fungsi argumen maksimum (\textit{argmax}) sebagaimana dirumuskan pada Persamaan~\eqref{eq:argmax_sentiment}:
+\begin{equation}
+\label{eq:argmax_sentiment}
+\hat{y} = \arg\max_{c \in \mathcal{Y}} P(y = c \mid \mathbf{x}; \theta)
+\end{equation}
+
+Namun, implementasi klasifikasi sentimen pada teks media sosial seperti komentar TikTok memiliki tingkat kompleksitas yang jauh lebih tinggi dibandingkan teks formal. Model sering menghadapi kendala ketaksaan konteks (\textit{ambiguity}), tingginya intensitas ungkapan sarkasme, variasi leksikon dialek lokal, serta struktur penulisan kalimat yang tidak baku \citep{luther2026analisis, saputra2026reaksi}.
+
+\subsection{Karakteristik Linguistik dan Tantangan Komputasi Bahasa Madura}
+
+Bahasa Madura merupakan salah satu rumpun bahasa Austronesia yang memiliki keunikan sistem fonologi, morfologi, sintaksis, serta tingkatan tutur sosial (\textit{ondhagghâ bhâsa}) \citep{aji2022one, firmansyah2021klasifikasi}. Pemahaman komprehensif terhadap karakteristik tersebut diperlukan untuk mengidentifikasi tantangan komputasi pemrosesan bahasa alami (NLP) pada korpus bahasa Madura.
+
+Dalam sistem fonologi, bahasa Madura memiliki kekhasan berupa oposisi bunyi antara konsonan tak-beraspirasi (biasa) dan konsonan beraspirasi (diucapkan dengan hembusan udara kuat), seperti pasangan fonem /b/ dan /bh/, /d/ dan /dh/, /j/ dan /jh/, serta /g/ dan /gh/ \citep{arifin2026heuristic}. Selain itu, kehadiran bunyi hambat glotal (\textit{glottal stop}) pada tengah atau akhir kata sering kali diekspresikan secara bervariasi dalam teks media sosial, baik menggunakan tanda apostrof ('), huruf 'k', maupun variasi huruf kapital secara acak \citep{firmansyah2021klasifikasi}.
+
+Pada komunikasi digital di platform TikTok, penulisan bahasa Madura memperlihatkan dinamika linguistik yang sangat cair:
+\begin{enumerate}
+    \item \textbf{Variasi Ortografi dan Fonetis Media Sosial}: Ketiadaan papan ketik (\textit{keyboard}) berstandar ortografi bahasa Madura menyebabkan warganet menuliskan kata berdasarkan persepsi fonetis subjektif (contoh: kata ganti orang pertama \textit{sengko'} kerap ditulis menjadi \textit{engkok}, \textit{engkook}, atau \textit{tang}) \citep{arifin2026heuristic}.
+    \item \textbf{Fenomena Campur Kode (\textit{Code-Mixing})}: Warganet secara intensif mencampurkan kosakata bahasa Madura, bahasa Indonesia, dan bahasa Jawa dalam satu konstruksi kalimat (contoh: \textit{“kamu lagi apah, mator sakalangkong ya”}) \citep{syauri2026analisis}.
+    \item \textbf{Sarkasme dan Satir Kultural}: Pengguna media sosial kerap mengekspresikan kritik tajam atau sindiran sosial menggunakan leksikon pujian semu atau pernyataan hiperbolis lokal, sehingga polaritas literal tampak positif padahal makna pragmatisnya bernilai negatif tajam \citep{luther2026analisis, saputra2026reaksi}.
+\end{enumerate}
+
+\subsection{Cara Kerja Arsitektur Transformer dan XLM-RoBERTa}
+
+Arsitektur model berbasis \textit{Transformer} memanfaatkan mekanisme perhatian diri multi-kepala (\textit{Multi-Head Self-Attention} / MHSA) untuk memproses seluruh token kata dalam kalimat secara simultan tanpa bergantung pada pemrosesan sekuensial rekursif \citep{darnoto2026language, luther2026analisis}. Pada setiap lapisan komputasi, representasi vektor masukan $\mathbf{X}$ diproyeksikan ke dalam tiga ruang vektor terpisah, yaitu Kueri ($Q$), Kunci ($K$), dan Nilai ($V$) melalui matriks bobot parameter $W^Q, W^K, W^V \in \mathbb{R}^{d_{\text{model}} \times d_k}$.
+
+Matriks bobot keterkaitan antartoken dihitung menggunakan formulasi \textit{Scaled Dot-Product Attention} sebagaimana dirumuskan pada Persamaan~\eqref{eq:self_attention}:
+\begin{equation}
+\label{eq:self_attention}
+\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+\end{equation}
+
+Faktor penskalaan $\sqrt{d_k}$ berfungsi untuk menstabilkan besaran produk dot agar gradien komputasi tidak mengalami kejenuhan saat nilai dimensi representasi berukuran besar.
+
+Model XLM-RoBERTa (\textit{Cross-lingual RoBERTa}) merupakan arsitektur model bahasa prapelatihan multibahasa berskala besar yang dikembangkan berbasis varian RoBERTa, yang dilatih menggunakan korpus teks berskala masif dari 100 bahasa dunia (\textit{CommonCrawl clean} / CC-100) \citep{luther2026analisis, winata2023nusax}. Model ini dioptimasi menggunakan objektif prapelatihan \textit{Masked Language Modeling} (MLM), di mana 15\% token kata disamarkan secara acak untuk diprediksi berdasarkan konteks dua arah (\textit{bidirectional context}).
+
+Objektif fungsi kerugian MLM didefinisikan secara matematis pada Persamaan~\eqref{eq:mlm_loss}:
+\begin{equation}
+\label{eq:mlm_loss}
+\mathcal{L}_{\text{MLM}}(\theta) = -\sum_{i \in \mathcal{M}} \log P(w_i \mid \tilde{x}; \theta)
+\end{equation}
+
+XLM-RoBERTa mengadopsi algoritma pemotongan subkata SentencePiece berbasis \textit{Byte-Pair Encoding} (BPE) dengan modal 250.000 kosakata bersama (\textit{shared vocabulary}), sehingga representasi subkata yang mirip memungkinkan transfer pengetahuan lintas bahasa ke bahasa daerah di Indonesia secara efektif \citep{darnoto2026language, wongso2024nusabert}.
+
+\subsection{Generalisasi Lintas Domain dan Kesenjangan Distribusi (Domain Shift)}
+
+Dalam teori pembelajaran mesin konvensional, model diasumsikan beroperasi dalam kondisi independen dan terdistribusi identik (\textit{independent and identically distributed} / i.i.d.), di mana data pelatihan dan data pengujian berasal dari ruang distribusi probabilitas yang sama: $P_{\text{src}}(X, Y) = P_{\text{tgt}}(X, Y)$.
+
+Namun, saat model diterapkan pada domain target yang berbeda, perbedaan karakteristik data memicu timbulnya pergeseran domain (\textit{domain shift}) \citep{aribowo2021cross, zulkifli2025indonesian}. Pada penelitian ini, domain sumber ($\mathcal{D}_{\text{src}}$) menggunakan korpus formal NusaX dengan distribusi $P_{\text{src}}(X)$, sedangkan domain target ($\mathcal{D}_{\text{tgt}}$) adalah korpus komentar TikTok dengan distribusi $P_{\text{tgt}}(X)$. Perbedaan distribusi probabilitas ini dirumuskan pada Persamaan~\eqref{eq:domain_shift}:
+\begin{equation}
+\label{eq:domain_shift}
+P_{\text{src}}(X) \neq P_{\text{tgt}}(X) \quad \text{atau} \quad P_{\text{src}}(Y \mid X) \neq P_{\text{tgt}}(Y \mid X)
+\end{equation}
+
+Pergeseran kovariat (\textit{covariate shift}) tersebut menyebabkan model yang memiliki akurasi tinggi pada domain sumber NusaX mengalami penurunan performa ketika diuji pada domain target TikTok karena karakteristik ruang fitur representasi bergeser secara signifikan \citep{aribowo2021cross, zulkifli2025indonesian}.
+
+Untuk mengukur seberapa besar dampak pergeseran domain terhadap kinerja model, besaran penurunan performa lintas domain (\textit{cross-domain performance drop}) dihitung menggunakan selisih mutlak nilai \textit{Macro F1-Score} antara evaluasi \textit{in-domain} (Skenario S0) dan evaluasi \textit{zero-shot cross-domain} (Skenario S1) sebagaimana dirumuskan pada Persamaan~\eqref{eq:delta_drop}:
+\begin{equation}
+\label{eq:delta_drop}
+\Delta_{\text{drop}} = F_1^{\text{src}} - F_1^{\text{tgt}}
+\end{equation}
+
+Selain penurunan mutlak, persentase penurunan relatif terhadap performa puncak model dihitung menggunakan Persamaan~\eqref{eq:pct_drop}:
+\begin{equation}
+\label{eq:pct_drop}
+\%\Delta_{\text{drop}} = \frac{F_1^{\text{src}} - F_1^{\text{tgt}}}{F_1^{\text{src}}} \times 100\%
+\end{equation}
+
+Formulasi penurunan relatif ini memberikan gambaran proporsional mengenai degradasi kemampuan generalisasi model akibat perbedaan karakteristik linguistik antara teks formal NusaX dan teks informal komentar TikTok \citep{aribowo2021cross, zulkifli2025indonesian}.
+
+\subsubsection{Adaptasi Domain Bertahap dan Efisiensi Sampel (\textit{Sample Efficiency})}
+
+Metode adaptasi domain terawasi digunakan untuk menyelaraskan kembali parameter bobot model $\theta$ yang awalnya dilatih pada domain sumber agar adaptif terhadap karakteristik unik domain target, dengan memanfaatkan sejumlah data sampel teranotasi dari domain target itu sendiri, yaitu $\mathcal{D}_{\text{train}}^{\text{tgt}} = \{(x_j^{\text{tgt}}, y_j^{\text{tgt}})\}_{j=1}^{N_{\text{tgt}}}$ \citep{darnoto2026language, syauri2026analisis}.
+
+Penelitian ini merancang protokol penyesuaian bertahap (\textit{gradual fine-tuning}), di mana parameter model $\theta$ yang telah dilatih pada data NusaX diadaptasikan menggunakan kuota data target bersarang (\textit{nested stratified subsets}):
+\begin{equation}
+\label{eq:adaptation_subsets}
+\mathcal{S}_k \subset \mathcal{D}_{\text{train}}^{\text{tgt}}, \quad \text{dengan proporsi } k \in \{10\%, 25\%, 50\%, 100\%\}
+\end{equation}
+
+Proses optimasi selama tahap adaptasi dilakukan dengan meminimalkan fungsi kerugian entropi silang (\textit{Cross-Entropy Loss}) pada setiap tahapan iterasi pembaruan bobot model:
+\begin{equation}
+\label{eq:loss_cross_entropy}
+\mathcal{L}_{\text{CE}}(\theta) = -\frac{1}{|\mathcal{S}_k|} \sum_{i=1}^{|\mathcal{S}_k|} \sum_{c=1}^{C} y_{i,c} \log \hat{y}_{i,c}
+\end{equation}
+
+Analisis efisiensi sampel mengevaluasi laju peningkatan kinerja marginal $\Delta F_1$ terhadap penambahan proporsi data latih target $\Delta k$ berdasarkan Persamaan~\eqref{eq:sample_efficiency}:
+\begin{equation}
+\label{eq:sample_efficiency}
+\text{Efisiensi} = \frac{F_1(\mathcal{S}_{k_2}) - F_1(\mathcal{S}_{k_1})}{|\mathcal{S}_{k_2}| - |\mathcal{S}_{k_1}|}
+\end{equation}
+
+Formulasi ini digunakan untuk mengidentifikasi ambang batas saturasi data (\textit{data saturation threshold}), yaitu titik di mana penambahan data anotasi tidak lagi menghasilkan kenaikan kinerja yang signifikan secara statistik.
+
+\subsection{Metrik Evaluasi Kinerja Klasifikasi Sentimen}
+
+Untuk mengevaluasi performa klasifikasi model secara objektif, penelitian ini menerapkan empat metrik standar dalam pemrosesan bahasa alami, yaitu \textit{Accuracy}, \textit{Precision}, \textit{Recall}, dan \textit{Macro F1-Score} \citep{winata2023nusax}. Pengukuran metrik tersebut diturunkan dari matriks konfusi (\textit{confusion matrix}) tiga kelas, yang mencatat empat luaran klasifikasi: \textit{True Positive} ($TP_c$), \textit{False Positive} ($FP_c$), \textit{True Negative} ($TN_c$), dan \textit{False Negative} ($FN_c$) untuk masing-masing kelas $c \in \{\text{Positif, Netral, Negatif}\}$.
+
+Akurasi mengukur proporsi prediksi benar model dari keseluruhan sampel pada data pengujian $N$ berdasarkan Persamaan~\eqref{eq:metric_accuracy}:
+\begin{equation}
+\label{eq:metric_accuracy}
+\text{Accuracy} = \frac{\sum_{c=1}^{C} TP_c}{N}
+\end{equation}
+
+Presisi ($P_c$) dan pemanggilan kembali atau \textit{Recall} ($R_c$) untuk setiap kelas $c$ dihitung berdasarkan Persamaan~\eqref{eq:precision_recall}:
+\begin{equation}
+\label{eq:precision_recall}
+P_c = \frac{TP_c}{TP_c + FP_c}, \quad R_c = \frac{TP_c}{TP_c + FN_c}
+\end{equation}
+
+Nilai $F1_c$ per kelas merupakan rata-rata harmonik dari presisi dan \textit{recall} yang dirumuskan pada Persamaan~\eqref{eq:f1_per_class}:
+\begin{equation}
+\label{eq:f1_per_class}
+F1_c = 2 \times \frac{P_c \times R_c}{P_c + R_c}
+\end{equation}
+
+Mengingat distribusi data sentimen media sosial kerap mengalami ketidakseimbangan kelas (\textit{class imbalance}), penelitian ini menetapkan \textit{Macro F1-Score} sebagai metrik evaluasi primer. Metrik ini menghitung rata-rata aritmatika nilai $F1$ di seluruh kelas secara setara tanpa terbiaskan oleh kelas mayoritas sebagaimana dirumuskan pada Persamaan~\eqref{eq:macro_f1}:
+\begin{equation}
+\label{eq:macro_f1}
+\text{Macro } F_1 = \frac{1}{C} \sum_{c=1}^{C} F1_c
+\end{equation}
+
+Skor \textit{Macro F1} memberikan penilaian kinerja yang adil dan objektif pada tugas klasifikasi data media sosial, karena bobot evaluasi pada kelas minoritas diperhitungkan setara dengan kelas mayoritas tanpa terdistorsi oleh ketimpangan sebaran kelas. Seluruh simbol parameter dan metrik yang digunakan dalam formulasi matematika di atas didefinisikan secara komprehensif pada bagian Daftar Simbol.
+
+\subsubsection{Uji Reliabilitas Kesepakatan Antar-Anotator (\textit{Inter-Annotator Agreement})}
+
+Koleksi data komentar TikTok dalam penelitian ini dianotasi secara independen oleh 2 hingga 3 penutur asli bahasa Madura. Untuk memastikan konsistensi, objektivitas, dan validitas ilmiah dari label \textit{ground truth}, tingkat reliabilitas kesepakatan diukur menggunakan koefisien \textit{Cohen's Kappa} (untuk 2 penilai) atau \textit{Fleiss' Kappa} (untuk 3 penilai) \citep{cahyawijaya2023nusawrites, winata2023nusax}.
+
+Formulasi koefisien Kappa didefinisikan secara matematis pada Persamaan~\eqref{eq:cohen_kappa}:
+\begin{equation}
+\label{eq:cohen_kappa}
+\kappa = \frac{P_o - P_e}{1 - P_e}
+\end{equation}
+
+Nilai $\kappa$ berkisar antara 0 hingga 1. Berdasarkan pedoman baku interpretasi \citet{winata2023nusax}, nilai $\kappa \ge 0{,}61$ mengindikasikan tingkat kesepakatan substansial (\textit{substantial agreement}), sedangkan $\kappa \ge 0{,}81$ merepresentasikan kesepakatan yang hampir sempurna (\textit{almost perfect agreement}). Apabila terjadi divergensi label antar-anotator, perbedaan tersebut diselesaikan melalui mekanisme rekonsiliasi terpandu hingga tercapai konsensus label definitif.

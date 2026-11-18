@@ -1,0 +1,90 @@
+% ==============================================================================
+% BAB I: PENDAHULUAN
+% Proposal Skripsi: Evaluasi Generalisasi Lintas Domain Model Analisis Sentimen Bahasa Madura
+% Penulis: Muhammad Syawqi Muhtadabillah (NIM: 2302310276)
+% ==============================================================================
+
+\chapter{PENDAHULUAN}
+
+\section{Latar Belakang}
+
+Perkembangan teknologi kecerdasan buatan, khususnya pada bidang Pemrosesan Bahasa Alami atau \textit{Natural Language Processing} (NLP), telah mengalami kemajuan yang sangat pesat. Hal ini dipicu oleh kehadiran arsitektur \textit{Transformer} dan model bahasa prapelatihan (\textit{pretrained language models}) multibahasa mutakhir, salah satunya adalah XLM-RoBERTa \citep{darnoto2026language, luther2026analisis}. Inovasi tersebut telah membuktikan keunggulan tinggi dalam menyelesaikan beragam tugas komputasi bahasa, termasuk analisis sentimen yang berfungsi untuk menyarikan opini, afeksi, dan persepsi publik dari teks digital secara otomatis \citep{aribowo2021cross, setiawan2023sentiment}.
+
+Meskipun teknologi pemrosesan teks telah berkembang pesat, kesenjangan digital pada sumber daya komputasi bahasa masih menjadi permasalahan nyata. Sebagian besar korpus dan model bahasa terpusat pada bahasa-bahasa dominan dunia dengan sumber daya melimpah (\textit{high-resource languages}) seperti bahasa Inggris dan Mandarin \citep{cahyawijaya2023nusawrites}. Sementara itu, Indonesia memiliki lebih dari 718 bahasa daerah dengan kekayaan sosiolinguistik yang sangat tinggi, namun mayoritas bahasa daerah tersebut masih tergolong sebagai bahasa berdaya komputasi rendah (\textit{low-resource languages}) dan belum terfasilitasi secara optimal dalam ekosistem teknologi digital modern \citep{aji2022one}.
+
+Bahasa Madura merupakan salah satu bahasa daerah dengan jumlah penutur terbesar di Indonesia. Berdasarkan kajian demografi linguistik \citep{aji2022one}, bahasa Madura dituturkan oleh lebih dari 7 hingga 10 juta jiwa yang tersebar di Pulau Madura, wilayah tapal kuda Jawa Timur, serta komunitas diaspora di berbagai wilayah Indonesia. Meskipun memiliki basis penutur yang sangat signifikan, teknologi pemrosesan bahasa alami untuk bahasa Madura masih sangat terbatas karena minimnya ketersediaan korpus digital beranotasi standar dan leksikon komputasi resmi \citep{cahyawijaya2021indo4b}.
+
+Upaya mitigasi kelangkaan data bahasa daerah di Indonesia mulai berkembang melalui kehadiran \textit{benchmark} NusaX yang diprakarsai oleh \citet{winata2023nusax}. NusaX menyediakan korpus paralel berkualitas tinggi untuk analisis sentimen dalam 10 bahasa daerah di Indonesia, termasuk bahasa Madura, dengan skema anotasi tiga kelas sentimen (positif, netral, dan negatif). Ketersediaan korpus NusaX membuka peluang signifikan untuk melatih model bahasa prapelatihan seperti XLM-RoBERTa melalui metode penyesuaian terawasi (\textit{supervised fine-tuning}) pada domain bahasa daerah \citep{darnoto2026language, winata2023nusax}.
+
+Kendati demikian, implementasi model yang dilatih pada korpus NusaX menghadapi tantangan kesenjangan karakteristik data saat diterapkan pada teks dunia nyata. Korpus NusaX disusun melalui proses penerjemahan manual dari ulasan formal berbahasa Indonesia ke dalam bahasa daerah dengan tata bahasa dan ejaan yang relatif baku. Sebaliknya, komunikasi publik pada media sosial seperti TikTok memperlihatkan dinamika bahasa yang jauh lebih kompleks, tidak baku, dan bersifat spontan \citep{luther2026analisis, saputra2026reaksi}.
+
+Platform TikTok saat ini telah menjadi salah satu ruang interaksi digital paling populer bagi masyarakat Madura, yang mencakup ragam konten komedi situasi, vlog kebudayaan, hingga opini publik. Pada kolom komentar TikTok, masyarakat mengekspresikan pendapat menggunakan bahasa Madura sehari-hari dengan ragam fonetis asal dengar (seperti penambahan huruf konsonan beraspirasi \textit{ongghu}), partikel penegas lokal (\textit{onggu}, \textit{le}, \textit{jeh}), reduplikasi kata, serta fenomena campur kode (\textit{code-mixing}) antara bahasa Madura, bahasa Indonesia, dan bahasa Jawa \citep{arifin2026heuristic, firmansyah2021klasifikasi, syauri2026analisis}.
+
+Perbedaan karakteristik linguistik yang tajam antara korpus formal NusaX dan teks komentar TikTok memicu terjadinya pergeseran domain (\textit{domain shift}), khususnya pergeseran kovariat (\textit{covariate shift}) pada ruang fitur representasi teks \citep{aribowo2021cross, zulkifli2025indonesian}. Model XLM-RoBERTa yang mencapai akurasi tinggi pada domain sumber NusaX berpotensi mengalami degradasi performa yang drastis ketika diuji langsung (\textit{zero-shot cross-domain}) pada data komentar TikTok. Hal ini menimbulkan kebutuhan mendesak untuk meneliti ketahanan generalisasi model dan merancang strategi adaptasi yang efektif.
+
+Pendekatan adaptasi domain terawasi (\textit{supervised domain adaptation}) merupakan salah satu solusi utama untuk menyelaraskan representasi fitur model dengan karakteristik domain target. Namun, anotasi data bahasa daerah pada platform media sosial memerlukan keterlibatan penutur asli (\textit{native speakers}) berkualifikasi tinggi, sehingga proses pelabelan data berskala ribuan sampel memerlukan waktu dan biaya yang sangat besar \citep{aji2022one, cahyawijaya2023nusawrites}. Oleh sebab itu, penelitian yang mengkaji efisiensi sampel melalui adaptasi bertahap menggunakan kuota data teranotasi minimal sangat krusial untuk menemukan ambang keseimbangan antara performa model dan efisiensi anotasi data.
+
+Untuk menjawab permasalahan tersebut secara komprehensif, penelitian ini dirancang dengan alur kronologi yang terstruktur dari awal hingga akhir melalui enam tahapan utama:
+\begin{enumerate}
+    \item Pengumpulan dan kurasi korpus, yang meliputi akuisisi \textit{dataset} NusaX bahasa Madura sebagai domain sumber serta pengumpulan data mentah komentar publik dari platform TikTok sebagai domain target;
+    \item Pra-pemrosesan data teks dan anotasi \textit{ground truth} tiga kelas sentimen (positif, netral, negatif) oleh penutur asli bahasa Madura dengan pengukuran reliabilitas kesepakatan menggunakan koefisien \textit{Cohen's Kappa} atau \textit{Fleiss' Kappa};
+    \item Pelatihan model \textit{baseline in-domain} (Skenario S0) pada data NusaX serta pengujian langsung tanpa penyesuaian (\textit{zero-shot cross-domain} / Skenario S1) pada komentar TikTok untuk mengukur besaran degradasi performa (\textit{cross-domain performance drop});
+    \item Pelaksanaan adaptasi domain bertahap (\textit{few-shot fine-tuning}) dengan mengintegrasikan data latih komentar TikTok dalam variasi kuota bersarang 10\%, 25\%, 50\%, dan 100\% (Skenario S2a hingga S2d) guna mengamati efisiensi sampel dan batas saturasi performa;
+    \item Evaluasi kinerja kuantitatif berbasis metrik \textit{Accuracy}, \textit{Precision}, \textit{Recall}, dan \textit{Macro F1-Score} yang dipadukan dengan analisis kualitatif kesalahan linguistik (\textit{qualitative error analysis}) lintas empat dimensi kebahasaan Madura; serta
+    \item Integrasi bobot model \textit{checkpoint} dan visualisasi analitik ke dalam purwarupa aplikasi web sistem MadSent berbasis Flask guna mendukung pengujian model secara terpadu.
+\end{enumerate}
+
+\section{Rumusan Masalah}
+
+Berdasarkan latar belakang tersebut, rumusan masalah dalam penelitian ini dirumuskan sebagai berikut:
+\begin{enumerate}
+    \item Seberapa besar penurunan kinerja (\textit{cross-domain performance drop}) model XLM-RoBERTa yang dilatih menggunakan \textit{dataset} NusaX bahasa Madura ketika diuji pada komentar TikTok berbahasa Madura tanpa melalui proses penyesuaian?
+    \item Bagaimana pengaruh penggunaan data komentar TikTok berlabel dengan jumlah yang berbeda, yaitu 10\%, 25\%, 50\%, dan 100\%, terhadap perubahan kinerja model XLM-RoBERTa setelah dilakukan \textit{fine-tuning}?
+    \item Apa saja jenis kesalahan yang dilakukan model XLM-RoBERTa dalam mengklasifikasikan sentimen komentar TikTok berbahasa Madura, khususnya yang berkaitan dengan penggunaan kosakata informal, campur kode bahasa Indonesia dan Madura, variasi penulisan, serta ungkapan sarkasme?
+\end{enumerate}
+
+\section{Batasan Masalah}
+
+Agar penelitian ini terarah dan memiliki batasan ruang lingkup yang tegas, batasan masalah dalam penelitian ini ditetapkan sebagai berikut:
+\begin{enumerate}
+    \item Arsitektur model pemrosesan bahasa alami yang diuji dibatasi pada model bahasa prapelatihan XLM-RoBERTa varian \textit{base} (\texttt{xlm-roberta-base}) melalui pustaka Hugging Face \textit{Transformers}, tanpa melibatkan perbandingan arsitektur model bahasa lainnya.
+    \item Korpus domain sumber (\textit{source domain}) dibatasi pada data teks \textit{dataset} NusaX subset bahasa Madura yang telah memiliki anotasi baku tiga kelas sentimen, yaitu positif, netral, dan negatif.
+    \item Korpus domain target dibatasi pada 500 sampel teks komentar publik berbahasa Madura di media sosial TikTok, yang dipartisi secara stratifikasi menjadi 200 data uji \textit{held-out}, 100 data validasi target, dan 200 data latih adaptasi, tanpa mencakup data dari platform media sosial lain maupun konten multimodal (audio/video).
+    \item Proses pelabelan sentimen pada korpus komentar TikTok dibatasi pada skema klasifikasi tiga kelas diskret (positif, netral, dan negatif) melalui anotasi manual oleh penutur asli (\textit{native speaker}) bahasa Madura yang divalidasi dengan koefisien reliabilitas kesepakatan \textit{Cohen's Kappa} atau \textit{Fleiss' Kappa}.
+    \item Skenario adaptasi domain bertahap dibatasi pada empat kuota penambahan data latih target, yaitu 10\% (20 sampel), 25\% (50 sampel), 50\% (100 sampel), dan 100\% (200 sampel) dari total bank data latih target yang dialokasikan.
+    \item Metrik evaluasi performa model dibatasi pada pengukuran kuantitatif \textit{Accuracy}, \textit{Precision}, \textit{Recall}, dan \textit{Macro F1-Score}, serta analisis kesalahan kualitatif yang dibatasi pada empat dimensi linguistik (kosakata informal, campur kode, variasi ortografi, dan ungkapan sarkasme).
+    \item Lingkungan eksperimen komputasi dibatasi pada platform Google Colab Pro dengan akselerasi GPU, kerangka kerja PyTorch, dan sistem antarmuka purwarupa berbasis Flask.
+\end{enumerate}
+
+\section{Tujuan Penelitian}
+
+Berdasarkan rumusan masalah yang telah ditetapkan, penelitian ini bertujuan untuk:
+\begin{enumerate}
+    \item Mengukur dan mengevaluasi besarnya penurunan kinerja (\textit{cross-domain performance drop}) model XLM-RoBERTa yang dilatih menggunakan \textit{dataset} NusaX bahasa Madura ketika diuji secara langsung (\textit{zero-shot}) pada komentar TikTok berbahasa Madura tanpa melalui proses penyesuaian.
+    \item Menganalisis pengaruh adaptasi domain menggunakan data komentar TikTok berlabel dengan variasi rasio 10\%, 25\%, 50\%, dan 100\% terhadap peningkatan kinerja model XLM-RoBERTa serta efisiensi pemanfaatan data setelah dilakukan proses \textit{fine-tuning}.
+    \item Mengidentifikasi dan mengkaji karakteristik kesalahan klasifikasi (\textit{error analysis}) yang dilakukan oleh model XLM-RoBERTa dalam memprediksi sentimen komentar TikTok berbahasa Madura, khususnya terkait penggunaan kosakata informal, campur kode (\textit{code-mixing}) bahasa Madura dan Indonesia, variasi penulisan (\textit{orthographic variation}), serta ungkapan sarkasme.
+\end{enumerate}
+
+\section{Manfaat Penelitian}
+
+Penelitian ini diharapkan dapat memberikan manfaat, baik dalam ranah pengembangan teoritis keilmuan maupun pada tataran implementasi praktis. Adapun manfaat yang diharapkan dari penelitian ini adalah sebagai berikut:
+
+\begin{enumerate}
+    \item \textbf{Manfaat Teoritis (Akademik)}:
+    
+    Secara teoritis, hasil penelitian ini diharapkan dapat memberikan kontribusi ilmiah bagi perkembangan khazanah keilmuan informatika dan kecerdasan buatan, khususnya pada pemrosesan bahasa daerah berdaya komputasi rendah (\textit{low-resource language processing}), yang meliputi:
+    \begin{itemize}
+        \item Memperkaya kajian ilmiah mengenai fenomena pergeseran domain (\textit{domain shift}) dan kemampuan generalisasi model prapelatihan multibahasa XLM-RoBERTa saat berhadapan dengan ragam teks media sosial non-baku.
+        \item Memberikan landasan empiris mengenai kurva efisiensi sampel (\textit{sample efficiency}) dan ambang batas saturasi penambahan data latih berlabel pada proses adaptasi domain bahasa daerah.
+        \item Menyediakan taksonomi analisis kesalahan linguistik bahasa Madura yang dapat menjadi rujukan ilmiah bagi peneliti lanjutan dalam mengembangkan teknik normalisasi teks, mitigasi campur kode, maupun deteksi sarkasme kultural.
+    \end{itemize}
+    
+    \item \textbf{Manfaat Praktis}:
+    
+    Secara praktis, hasil penelitian ini diharapkan dapat memberikan manfaat terapan yang dapat dimanfaatkan langsung oleh masyarakat akademisi, praktisi, dan pengembang teknologi bahasa sebagai berikut:
+    \begin{itemize}
+        \item Menghasilkan korpus komentar TikTok berbahasa Madura berlabel sentimen yang tervalidasi penutur asli, yang dapat digunakan sebagai data tolok ukur (\textit{benchmark}) terbuka untuk riset lanjutan di Program Studi Informatika Universitas K.H. Bahaudin Mudhary Madura.
+        \item Memberikan panduan praktis dan rekomendasi teknis bagi pengembang perangkat lunak dalam menentukan alokasi data anotasi yang paling efisien biaya dan waktu saat membangun sistem analisis sentimen bahasa daerah.
+        \item Menghasilkan rancangan purwarupa sistem antarmuka MadSent yang mempermudah peneliti dan pengguna awam dalam melakukan pemantauan model, pengujian inferensi, dan analisis sentimen teks bahasa Madura secara terpadu.
+    \end{itemize}
+\end{enumerate}

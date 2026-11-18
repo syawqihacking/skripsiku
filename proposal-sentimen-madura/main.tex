@@ -1,0 +1,95 @@
+%!TEX root = ./main.tex
+% ==============================================================================
+% MASTER DOCUMENT PROPOSAL SKRIPSI
+% Fakultas Sains dan Teknologi - Universitas Bahaudin Mudhary Madura
+% Sesuai Buku Pedoman Penulisan Skripsi FST UNIBA Madura Revisi 2026
+% ==============================================================================
+
+\documentclass[12pt, a4paper, oneside]{report}
+
+% 1. Pemuatan Modul Konfigurasi
+\input{config/packages}
+\input{config/metadata}
+\input{config/formatting}
+
+\begin{document}
+
+% ==============================================================================
+% BAGIAN AWAL (FRONTMATTER)
+% ==============================================================================
+\pagestyle{empty}
+\hypersetup{pageanchor=false}
+
+% Halaman Sampul (Cover Proposal)
+\input{frontmatter/00-cover}
+
+% Aktifkan pageanchor untuk hyperlink dokumen PDF
+\hypersetup{pageanchor=true}
+
+% Lembar Pengesahan Dosen Pembimbing (Halaman ii)
+\input{frontmatter/01-pengesahan}
+
+% Kata Pengantar (Halaman iii)
+\input{frontmatter/06-pengantar}
+
+% Daftar Isi
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{DAFTAR ISI}
+{\singlespacing
+\tableofcontents}
+
+% Daftar Tabel (Sesuai Pedoman FST 2026: Daftar Tabel mendahului Daftar Gambar)
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{DAFTAR TABEL}
+{\singlespacing
+\listoftables}
+
+% Daftar Gambar
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{DAFTAR GAMBAR}
+{\singlespacing
+\listoffigures}
+
+% Daftar Simbol (Sesuai Pedoman FST 2026: Lampiran 12)
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{DAFTAR SIMBOL}
+\input{frontmatter/07-simbol}
+
+% ==============================================================================
+% BAGIAN UTAMA (MAINMATTER / BAB I - III: PROPOSAL SKRIPSI)
+% Penomoran angka Arab (1, 2, 3, ...) di kanan atas,
+% kecuali halaman awal bab di tengah bawah
+% ==============================================================================
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\pagestyle{mainstyle}
+
+% Bab I s.d. Bab III (Fokus Proposal Skripsi Pra-Eksperimen)
+\input{chapters/bab1}
+\input{chapters/bab2}
+\input{chapters/bab3}
+
+% ==============================================================================
+% BAGIAN AKHIR (BACKMATTER)
+% ==============================================================================
+
+% Daftar Pustaka (APA Style)
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{DAFTAR PUSTAKA}
+\renewcommand{\bibname}{DAFTAR PUSTAKA}
+\renewcommand{\refname}{DAFTAR PUSTAKA}
+\singlespacing
+\bibliographystyle{apacite}
+\bibliography{references/daftar-pustaka}
+
+% Lampiran
+\clearpage
+\input{appendices/lampiran}
+
+\end{document}

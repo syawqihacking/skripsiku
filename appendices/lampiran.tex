@@ -1,0 +1,680 @@
+% ==============================================================================
+% LAMPIRAN-LAMPIRAN SKRIPSI
+% Sesuai Pedoman Penulisan Skripsi FST UNIBA Madura 2026
+% ==============================================================================
+
+\clearpage
+\phantomsection
+\chapter*{LAMPIRAN}
+\addcontentsline{toc}{chapter}{LAMPIRAN}
+
+\vspace{0.5cm}
+
+% ==============================================================================
+% LAMPIRAN 1: ORKESTRASI DOCKER COMPOSE
+% ==============================================================================
+\section*{Lampiran 1: Berkas Orkestrasi Kluster Kontainer Heterogen (Docker Compose)}
+
+Berikut adalah berkas orkestrasi \texttt{docker-compose.yml} yang mendefinisikan pembatasan kuota sumber daya cgroups v2 (\textit{vCPU} dan batas memori RAM) dengan rasio kapasitas heterogen 1:2:4, isolasi jaringan privat \textit{Docker Bridge Network}, profil peladen penyeimbang beban NGINX dan HAProxy, serta instrumen telemetri cAdvisor:
+
+\begin{lstlisting}[language=bash, caption={Berkas docker-compose.yml Kluster Kontainer Heterogen}]
+version: '3.8'
+
+# Topologi Heterogen: Rasio cgroups 1:2:4
+networks:
+  skripsi-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+services:
+  # Backend 1: Tier Small (0.5 vCPU, 256 MB RAM) -> Rasio 1
+  web-backend-1:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: web-backend-1
+    hostname: web-backend-1
+    restart: unless-stopped
+    environment:
+      - PORT=8080
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    cpus: 0.50
+    mem_limit: 256m
+    networks:
+      - skripsi-net
+
+  # Backend 2: Tier Medium (1.0 vCPU, 512 MB RAM) -> Rasio 2
+  web-backend-2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: web-backend-2
+    hostname: web-backend-2
+    restart: unless-stopped
+    environment:
+      - PORT=8080
+    deploy:
+      resources:
+        limits:
+          cpus: '1.00'
+          memory: 512M
+    cpus: 1.00
+    mem_limit: 512m
+    networks:
+      - skripsi-net
+
+  # Backend 3: Tier Large (2.0 vCPU, 1024 MB RAM) -> Rasio 4
+  web-backend-3:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: web-backend-3
+    hostname: web-backend-3
+    restart: unless-stopped
+    environment:
+      - PORT=8080
+    deploy:
+      resources:
+        limits:
+          cpus: '2.00'
+          memory: 1024M
+    cpus: 2.00
+    mem_limit: 1024m
+    networks:
+      - skripsi-net
+
+  # Load Balancer NGINX (Default Active Profile)
+  loadbalancer-nginx:
+    image: nginx:1.27-alpine
+    container_name: lb-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ${NGINX_CONF:-./loadbalancer/nginx/nginx-wrr.conf}:/etc/nginx/nginx.conf:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - web-backend-1
+      - web-backend-2
+      - web-backend-3
+    networks:
+      - skripsi-net
+    profiles:
+      - nginx
+      - default
+
+  # Load Balancer HAProxy (Alternative Profile)
+  loadbalancer-haproxy:
+    image: haproxy:2.8-alpine
+    container_name: lb-haproxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8404:8404" # Stats Dashboard
+    volumes:
+      - ${HAPROXY_CONF:-./loadbalancer/haproxy/haproxy-wrr.cfg}:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./logs/haproxy:/var/log
+    depends_on:
+      - web-backend-1
+      - web-backend-2
+      - web-backend-3
+    networks:
+      - skripsi-net
+    profiles:
+      - haproxy
+
+  # Telemetri cAdvisor (Monitoring cgroups real-time)
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: skripsi-cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "8081:8080"
+    networks:
+      - skripsi-net
+    profiles:
+      - telemetry
+\end{lstlisting}
+
+\newpage
+
+% ==============================================================================
+% LAMPIRAN 2: KONFIGURASI NGINX LOAD BALANCER
+% ==============================================================================
+\section*{Lampiran 2: Berkas Konfigurasi Mesin Penyeimbang Beban NGINX}
+
+Berikut adalah berkas konfigurasi NGINX untuk algoritma \textit{Weighted Round Robin} (\texttt{nginx-wrr.conf}) dan \textit{Weighted Least Connections} (\texttt{nginx-wlc.conf}) yang mengintegrasikan pencatatan log akses berformat kustom untuk keperluan audit deviasi distribusi beban:
+
+\begin{lstlisting}[language=bash, caption={Konfigurasi nginx-wrr.conf (Weighted Round Robin)}]
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 10240;
+    use epoll;
+    multi_accept on;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    log_format audit_log '$remote_addr - [$time_local] "$request" '
+                         '$status $body_bytes_sent rt=$request_time '
+                         'upstream_addr="$upstream_addr" '
+                         'upstream_status="$upstream_status" '
+                         'upstream_response_time="$upstream_response_time"';
+
+    access_log /var/log/nginx/access.log audit_log buffer=64k flush=1s;
+
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+
+    # Upstream: Weighted Round Robin (WRR - Bobot 1:2:4 sesuai kapasitas cgroups)
+    upstream backend_cluster {
+        server web-backend-1:8080 weight=1 max_fails=3 fail_timeout=10s;
+        server web-backend-2:8080 weight=2 max_fails=3 fail_timeout=10s;
+        server web-backend-3:8080 weight=4 max_fails=3 fail_timeout=10s;
+        keepalive 64;
+    }
+
+    server {
+        listen 80;
+        server_name localhost;
+
+        location / {
+            proxy_pass http://backend_cluster;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+        }
+
+        location /nginx_status {
+            stub_status on;
+            access_log off;
+        }
+    }
+}
+\end{lstlisting}
+
+\vspace{0.4cm}
+
+\begin{lstlisting}[language=bash, caption={Konfigurasi nginx-wlc.conf (Weighted Least Connections)}]
+# Upstream blok untuk Weighted Least Connections (least_conn)
+upstream backend_cluster {
+    least_conn;
+    server web-backend-1:8080 weight=1 max_fails=3 fail_timeout=10s;
+    server web-backend-2:8080 weight=2 max_fails=3 fail_timeout=10s;
+    server web-backend-3:8080 weight=4 max_fails=3 fail_timeout=10s;
+    keepalive 64;
+}
+\end{lstlisting}
+
+\newpage
+
+% ==============================================================================
+% LAMPIRAN 3: KONFIGURASI HAPROXY LOAD BALANCER
+% ==============================================================================
+\section*{Lampiran 3: Berkas Konfigurasi Mesin Penyeimbang Beban HAProxy}
+
+Berikut adalah berkas konfigurasi HAProxy untuk algoritma \textit{Weighted Round Robin} (\texttt{haproxy-wrr.cfg}) dan \textit{Weighted Least Connections} (\texttt{haproxy-wlc.cfg}):
+
+\begin{lstlisting}[language=bash, caption={Konfigurasi haproxy-wrr.cfg (Weighted Round Robin)}]
+global
+    log stdout format raw local0
+    maxconn 20000
+    stats socket /tmp/haproxy.sock mode 660 level admin
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    retries 3
+    timeout connect 5000ms
+    timeout client  50000ms
+    timeout server  50000ms
+
+frontend http_in
+    bind *:80
+    default_backend web_backends
+
+backend web_backends
+    balance roundrobin
+    option httpchk GET /health
+    http-check expect status 200
+    # Alokasi bobot 1:2:4 sesuai perbandingan cgroups
+    server web1 web-backend-1:8080 check weight 1
+    server web2 web-backend-2:8080 check weight 2
+    server web3 web-backend-3:8080 check weight 4
+
+listen stats
+    bind *:8404
+    stats enable
+    stats uri /stats
+    stats refresh 5s
+\end{lstlisting}
+
+\vspace{0.4cm}
+
+\begin{lstlisting}[language=bash, caption={Konfigurasi haproxy-wlc.cfg (Weighted Least Connections)}]
+backend web_backends
+    balance leastconn
+    option httpchk GET /health
+    http-check expect status 200
+    # Alokasi bobot 1:2:4 dengan algoritma leastconn
+    server web1 web-backend-1:8080 check weight 1
+    server web2 web-backend-2:8080 check weight 2
+    server web3 web-backend-3:8080 check weight 4
+\end{lstlisting}
+
+\newpage
+
+% ==============================================================================
+% LAMPIRAN 4: KODE SUMBER BACKEND SERVICE GOLANG & DOCKERFILE
+% ==============================================================================
+\section*{Lampiran 4: Implementasi Layanan Backend Golang \& Berkas Citra Docker}
+
+Berikut adalah implementasi peladen \textit{backend} berbasis bahasa pemrograman Go (\texttt{main.go}) yang mengekspos \textit{endpoint} intensif \texttt{/api/cpu} dan antrean soket \texttt{/api/io}, serta berkas \texttt{Dockerfile} berbasis kompilasi multi-tahap (\textit{multi-stage build}):
+
+\begin{lstlisting}[language=C, caption={Kode Sumber Backend Service (main.go)}]
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+)
+
+type Response struct {
+	Status        string `json:"status"`
+	ContainerID   string `json:"container_id"`
+	Endpoint      string `json:"endpoint"`
+	ExecutionTime string `json:"execution_time_ms"`
+	Timestamp     int64  `json:"timestamp"`
+	Result        string `json:"result,omitempty"`
+}
+
+var containerID string
+
+func init() {
+	var err error
+	containerID, err = os.Hostname()
+	if err != nil {
+		containerID = "unknown-container"
+	}
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Backend-Server", containerID)
+	json.NewEncoder(w).Encode(Response{
+		Status:      "healthy",
+		ContainerID: containerID,
+		Endpoint:    "/health",
+		Timestamp:   time.Now().UnixMilli(),
+	})
+}
+
+// cpuHandler menjalankan hash SHA-256 berulang untuk memicu komputasi vCPU
+func cpuHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	iterations := 10000
+	if iterParam := r.URL.Query().Get("iter"); iterParam != "" {
+		if val, err := strconv.Atoi(iterParam); err == nil && val > 0 {
+			iterations = val
+		}
+	}
+
+	data := []byte("uniba-madura-skripsi-benchmarking-seed-" + strconv.FormatInt(start.UnixNano(), 10))
+	for i := 0; i < iterations; i++ {
+		hash := sha256.Sum256(data)
+		data = hash[:]
+	}
+
+	elapsed := float64(time.Since(start).Microseconds()) / 1000.0
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Backend-Server", containerID)
+	json.NewEncoder(w).Encode(Response{
+		Status:        "success",
+		ContainerID:   containerID,
+		Endpoint:      "/api/cpu",
+		ExecutionTime: fmt.Sprintf("%.2f", elapsed),
+		Timestamp:     time.Now().UnixMilli(),
+		Result:        hex.EncodeToString(data),
+	})
+}
+
+// ioHandler mensimulasikan latensi operasi basis data (150ms non-blocking)
+func ioHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	delay := 150 * time.Millisecond
+	if delayParam := r.URL.Query().Get("delay"); delayParam != "" {
+		if ms, err := strconv.Atoi(delayParam); err == nil && ms >= 0 {
+			delay = time.Duration(ms) * time.Millisecond
+		}
+	}
+
+	time.Sleep(delay)
+	elapsed := float64(time.Since(start).Microseconds()) / 1000.0
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Backend-Server", containerID)
+	json.NewEncoder(w).Encode(Response{
+		Status:        "success",
+		ContainerID:   containerID,
+		Endpoint:      "/api/io",
+		ExecutionTime: fmt.Sprintf("%.2f", elapsed),
+		Timestamp:     time.Now().UnixMilli(),
+		Result:        fmt.Sprintf("I/O delay of %v completed", delay),
+	})
+}
+
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", healthHandler)
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/api/cpu", cpuHandler)
+	mux.HandleFunc("/api/io", ioHandler)
+
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      mux,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	log.Printf("[INFO] Backend container %s listening on port %s...", containerID, port)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("[FATAL] Server error: %v", err)
+	}
+}
+\end{lstlisting}
+
+\vspace{0.4cm}
+
+\begin{lstlisting}[language=bash, caption={Berkas Multi-Stage Dockerfile Backend}]
+# Tahap 1: Kompilasi Binary Go
+FROM golang:1.22-alpine AS builder
+WORKDIR /app
+COPY go.mod ./
+COPY main.go ./
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o backend-app main.go
+
+# Tahap 2: Runtime Image Ringan
+FROM alpine:3.20
+RUN apk --no-cache add ca-certificates tzdata
+WORKDIR /root/
+COPY --from=builder /app/backend-app .
+ENV PORT=8080
+EXPOSE 8080
+CMD ["./backend-app"]
+\end{lstlisting}
+
+\newpage
+
+% ==============================================================================
+% LAMPIRAN 5: SKRIP UJI BEBAN GRAFANA K6
+% ==============================================================================
+\section*{Lampiran 5: Skrip Skenario Pengujian Beban Grafana k6}
+
+Berikut adalah skrip otomasi pengujian beban stres k6 untuk skenario \textit{CPU-bound} (\texttt{cpu-test.js}) dan \textit{I/O-bound} (\texttt{io-test.js}) dengan penambahan pengguna virtual bertahap (100 $\rightarrow$ 500 $\rightarrow$ 1.000 VUs):
+
+\begin{lstlisting}[language=bash, caption={Skrip Skenario CPU-bound (cpu-test.js)}]
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { Counter, Rate, Trend } from 'k6/metrics';
+
+export const reqBackend1 = new Counter('backend_1_requests');
+export const reqBackend2 = new Counter('backend_2_requests');
+export const reqBackend3 = new Counter('backend_3_requests');
+export const errorRate = new Rate('custom_error_rate');
+export const cpuLatency = new Trend('cpu_endpoint_duration', true);
+
+export const options = {
+    stages: [
+        { duration: '1m', target: 100 },  // Tahap pemanasan (Warm-up) 100 VUs
+        { duration: '3m', target: 500 },  // Beban menengah 500 VUs
+        { duration: '4m', target: 1000 }, // Beban puncak (Peak saturation) 1.000 VUs
+        { duration: '2m', target: 0 },    // Penurunan beban (Cool-down)
+    ],
+    thresholds: {
+        http_req_failed: ['rate<0.05'], // Toleransi error rate maksimal 5%
+        http_req_duration: ['p(95)<3000', 'p(99)<5000'], // SLO p95 < 3s, p99 < 5s
+    },
+};
+
+const BASE_URL = __ENV.TARGET_URL || 'http://localhost';
+
+export default function () {
+    const res = http.get(`${BASE_URL}/api/cpu`, {
+        timeout: '10s',
+        tags: { endpoint: 'cpu_bound' },
+    });
+
+    const isSuccess = check(res, {
+        'status is 200': (r) => r.status === 200,
+        'has valid result': (r) => r.body && r.body.includes('success'),
+    });
+
+    errorRate.add(!isSuccess);
+    cpuLatency.add(res.timings.duration);
+
+    const backendServer = res.headers['X-Backend-Server'];
+    if (backendServer) {
+        if (backendServer.includes('web-backend-1')) {
+            reqBackend1.add(1);
+        } else if (backendServer.includes('web-backend-2')) {
+            reqBackend2.add(1);
+        } else if (backendServer.includes('web-backend-3')) {
+            reqBackend3.add(1);
+        }
+    }
+
+    sleep(0.1);
+}
+\end{lstlisting}
+
+\newpage
+
+% ==============================================================================
+% LAMPIRAN 6: OTOMASI EKSEKUSI MATRIKS & AUDIT MAPE
+% ==============================================================================
+\section*{Lampiran 6: Skrip Otomasi Pengujian Matriks \& Analisis Presisi MAPE}
+
+Berikut adalah skrip \textit{orchestration runner} (\texttt{run-matrix.sh}) untuk mengeksekusi 16 kombinasi eksperimen dan skrip Python (\texttt{parse-logs.py}) untuk menghitung metrik \textit{Mean Absolute Percentage Error} (MAPE):
+
+\begin{lstlisting}[language=bash, caption={Skrip Otomasi 16 Skenario Matriks (run-matrix.sh)}]
+#!/usr/bin/env bash
+set -e
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
+cd "$DIR"
+
+mkdir -p logs/nginx logs/haproxy results
+
+run_scenario() {
+    local lb="$1"       # nginx / haproxy
+    local algo="$2"     # rr / lc / wrr / wlc
+    local workload="$3" # cpu / io
+
+    echo ">>> MENJALANKAN SKENARIO: LB=$lb | ALGO=$algo | WORKLOAD=$workload <<<"
+    rm -f logs/nginx/access.log logs/haproxy/haproxy.log
+
+    if [ "$lb" == "nginx" ]; then
+        export NGINX_CONF="./loadbalancer/nginx/nginx-${algo}.conf"
+        docker compose --profile nginx down --volumes --remove-orphans > /dev/null 2>&1 || true
+        docker compose --profile nginx up -d --build
+        sleep 5
+    else
+        export HAPROXY_CONF="./loadbalancer/haproxy/haproxy-${algo}.cfg"
+        docker compose --profile haproxy down --volumes --remove-orphans > /dev/null 2>&1 || true
+        docker compose --profile haproxy up -d --build
+        sleep 5
+    fi
+
+    local script="benchmark/${workload}-test.js"
+    local output_json="results/${lb}_${algo}_${workload}.json"
+    k6 run --out json="$output_json" "$script"
+
+    local algo_type="weighted"
+    if [ "$algo" == "rr" ] || [ "$algo" == "lc" ]; then
+        algo_type="unweighted"
+    fi
+
+    if [ "$lb" == "nginx" ]; then
+        python3 scripts/parse-logs.py --log logs/nginx/access.log --type nginx --algorithm "$algo_type"
+    else
+        python3 scripts/parse-logs.py --log logs/haproxy/haproxy.log --type haproxy --algorithm "$algo_type"
+    fi
+}
+
+run_scenario "$1" "$2" "$3"
+\end{lstlisting}
+
+\vspace{0.4cm}
+
+\begin{lstlisting}[language=Python, caption={Skrip Penghitung Deviasi Distribusi Beban MAPE (parse-logs.py)}]
+#!/usr/bin/env python3
+import sys, re, argparse
+from collections import Counter
+
+def parse_nginx_log(log_path):
+    counts = Counter()
+    pattern = re.compile(r'upstream_addr="([^"]+)"')
+    total = 0
+    with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+        for line in f:
+            match = pattern.search(line)
+            if match:
+                addr = match.group(1).split(',')[0].strip()
+                counts[addr] += 1
+                total += 1
+    return counts, total
+
+def calculate_mape(actual_counts, is_weighted=True):
+    if is_weighted:
+        p_ideal = [100.0 * 1.0 / 7.0, 100.0 * 2.0 / 7.0, 100.0 * 4.0 / 7.0]
+    else:
+        p_ideal = [100.0 / 3.0, 100.0 / 3.0, 100.0 / 3.0]
+
+    total_reqs = sum(actual_counts.values())
+    if total_reqs == 0: return
+
+    nodes_sorted = sorted(actual_counts.keys())
+    deviations = []
+    for idx, node in enumerate(nodes_sorted):
+        vol = actual_counts[node]
+        p_act = (vol / total_reqs) * 100.0
+        p_id = p_ideal[idx] if idx < len(p_ideal) else (100.0 / len(nodes_sorted))
+        dev = abs(p_act - p_id) / p_id * 100.0
+        deviations.append(dev)
+
+    mape = sum(deviations) / len(deviations) if deviations else 0.0
+    print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
+\end{lstlisting}
+
+\newpage
+
+% ==============================================================================
+% LAMPIRAN 7: SKRIP OTOMASI PENGUJIAN MATRIKS DAN TUNING KERNEL LINUX
+% ==============================================================================
+\section*{Lampiran 7: Skrip Otomasi Pengujian Matriks dan Tuning Kernel Linux}
+
+Berikut adalah skrip otomasi eksekusi matriks pengujian beban dengan isolasi CPU core hibrida (\texttt{run-matrix.sh}) serta konfigurasi optimalisasi soket TCP kernel Linux (\texttt{99-skripsi.conf}):
+
+\begin{lstlisting}[language=bash, caption={Skrip Otomasi Matriks Pengujian Beban dan Isolasi CPU (run-matrix.sh)}]
+#!/usr/bin/env bash
+# ==============================================================================
+# AUTOMATED MATRIX TEST RUNNER (SKRIPSI AHMAD MUQTAFI)
+# Lingkungan: Bare-Metal Laptop MSI Thin GF63 12UCX (Ubuntu 24.04 LTS)
+# Isolasi CPU: Server pada P-Cores (0-7), k6 pada E-Cores (8-11)
+# ==============================================================================
+set -e
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
+cd "$DIR"
+
+mkdir -p logs/nginx logs/haproxy results
+
+# Deteksi ketersediaan core CPU untuk taskset E-Cores (CPU 8-11)
+TOTAL_CPUS=$(nproc 2>/dev/null || echo 1)
+TASKSET_CMD=""
+if [ "$TOTAL_CPUS" -ge 12 ]; then
+    TASKSET_CMD="taskset -c 8-11"
+    echo "[ISOLASI CPU] Grafana k6 dipin ke E-Cores (CPU 8-11) via taskset."
+fi
+
+run_scenario() {
+    local lb="$1" algo="$2" workload="$3" quick_flag="$4"
+    rm -f logs/nginx/access.log logs/haproxy/haproxy.log
+
+    if [ "$lb" == "nginx" ]; then
+        export NGINX_CONF="./loadbalancer/nginx/nginx-${algo}.conf"
+        docker compose --profile nginx down --volumes --remove-orphans > /dev/null 2>&1 || true
+        docker compose --profile nginx up -d --build
+    else
+        export HAPROXY_CONF="./loadbalancer/haproxy/haproxy-${algo}.cfg"
+        docker compose --profile haproxy down --volumes --remove-orphans > /dev/null 2>&1 || true
+        docker compose --profile haproxy up -d --build
+    fi
+    sleep 5
+
+    local script="benchmark/${workload}-test.js"
+    local output_json="results/${lb}_${algo}_${workload}_$(date +%Y%m%d_%H%M%S).json"
+    local k6_extra_args=""
+    [ "$quick_flag" == "--quick" ] && k6_extra_args="--vus 50 --duration 1m"
+
+    if command -v k6 &> /dev/null; then
+        $TASKSET_CMD k6 run $k6_extra_args --out json="$output_json" "$script"
+    else
+        docker run --rm -i --network="host" --cpuset-cpus="8-11" \
+            -v "$DIR/benchmark:/benchmark" grafana/k6 run $k6_extra_args "/$script"
+    fi
+}
+\end{lstlisting}
+
+\vspace{0.4cm}
+
+\begin{lstlisting}[language=bash, caption={Konfigurasi Tuning Parameter Kernel Linux (/etc/sysctl.d/99-skripsi.conf)}]
+# Optimalisasi Batas Antrean Koneksi TCP dan Socket Buffer
+net.core.somaxconn = 65535
+net.ipv4.tcp_max_syn_backlog = 65535
+net.ipv4.ip_local_port_range = 1024 65535
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 15
+fs.file-max = 2097152
+\end{lstlisting}

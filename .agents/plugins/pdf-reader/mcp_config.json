@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "pdf-reader": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-pdf",
+        "--stdio"
+      ]
+    }
+  }
+}

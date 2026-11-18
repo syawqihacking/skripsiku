@@ -1,0 +1,155 @@
+version: '3.8'
+
+# ==============================================================================
+# DOCKER COMPOSE TOPOLOGI HETEROGEN (SKRIPSI AHMAD MUQTAFI)
+# Lingkungan: Bare-Metal Laptop MSI Thin GF63 12UCX (Ubuntu 24.04 LTS)
+# Isolasi CPU Pinning: P-Cores (CPU 0-7) untuk Kluster Peladen Docker
+# Rasio Kapasitas cgroups 1:2:4 (0.5 vCPU/256MB, 1.0 vCPU/512MB, 2.0 vCPU/1024MB)
+# ==============================================================================
+
+networks:
+  skripsi-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+services:
+  # ============================================================================
+  # BACKEND SERVICE 1: Tier Small (0.5 vCPU, 256 MB RAM) -> Rasio 1
+  # ============================================================================
+  web-backend-1:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: web-backend-1
+    hostname: web-backend-1
+    restart: unless-stopped
+    cpuset: "0-7"
+    environment:
+      - PORT=8080
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    cpus: 0.50
+    mem_limit: 256m
+    networks:
+      - skripsi-net
+
+  # ============================================================================
+  # BACKEND SERVICE 2: Tier Medium (1.0 vCPU, 512 MB RAM) -> Rasio 2
+  # ============================================================================
+  web-backend-2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: web-backend-2
+    hostname: web-backend-2
+    restart: unless-stopped
+    cpuset: "0-7"
+    environment:
+      - PORT=8080
+    deploy:
+      resources:
+        limits:
+          cpus: '1.00'
+          memory: 512M
+    cpus: 1.00
+    mem_limit: 512m
+    networks:
+      - skripsi-net
+
+  # ============================================================================
+  # BACKEND SERVICE 3: Tier Large (2.0 vCPU, 1024 MB RAM) -> Rasio 4
+  # ============================================================================
+  web-backend-3:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: web-backend-3
+    hostname: web-backend-3
+    restart: unless-stopped
+    cpuset: "0-7"
+    environment:
+      - PORT=8080
+    deploy:
+      resources:
+        limits:
+          cpus: '2.00'
+          memory: 1024M
+    cpus: 2.00
+    mem_limit: 1024m
+    networks:
+      - skripsi-net
+
+  # ============================================================================
+  # LOAD BALANCER: NGINX (Default Active Profile)
+  # Gunakan volume mount untuk beralih algoritma: nginx-rr, nginx-lc, nginx-wrr, nginx-wlc
+  # ============================================================================
+  loadbalancer-nginx:
+    image: nginx:1.27-alpine
+    container_name: lb-nginx
+    restart: unless-stopped
+    cpuset: "0-7"
+    ports:
+      - "80:80"
+    volumes:
+      - ${NGINX_CONF:-./loadbalancer/nginx/nginx-wrr.conf}:/etc/nginx/nginx.conf:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - web-backend-1
+      - web-backend-2
+      - web-backend-3
+    networks:
+      - skripsi-net
+    profiles:
+      - nginx
+      - default
+
+  # ============================================================================
+  # LOAD BALANCER: HAProxy (Alternative Profile)
+  # Gunakan volume mount untuk beralih algoritma: haproxy-rr, haproxy-lc, haproxy-wrr, haproxy-wlc
+  # ============================================================================
+  loadbalancer-haproxy:
+    image: haproxy:2.8-alpine
+    container_name: lb-haproxy
+    restart: unless-stopped
+    cpuset: "0-7"
+    ports:
+      - "80:80"
+      - "8404:8404" # Stats Dashboard
+    volumes:
+      - ${HAPROXY_CONF:-./loadbalancer/haproxy/haproxy-wrr.cfg}:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./logs/haproxy:/var/log
+    depends_on:
+      - web-backend-1
+      - web-backend-2
+      - web-backend-3
+    networks:
+      - skripsi-net
+    profiles:
+      - haproxy
+
+  # ============================================================================
+  # TELEMETRI: cAdvisor (Memantau cgroups CPU throttling & memory real-time)
+  # ============================================================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: skripsi-cadvisor
+    restart: unless-stopped
+    cpuset: "0-7"
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "8081:8080"
+    networks:
+      - skripsi-net
+    profiles:
+      - telemetry

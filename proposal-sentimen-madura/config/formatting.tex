@@ -1,0 +1,209 @@
+% ==============================================================================
+% PENGATURAN FORMATTING & TATA LETAK SKRIPSI
+% Sesuai Pedoman Penulisan Skripsi FST UNIBA Madura 2026
+% ==============================================================================
+
+% 1. SPASI & INDENTASI
+\onehalfspacing                      % Spasi antar baris 1.5
+\setlength{\parindent}{0.75cm}       % Indent alinea baru 0.75 cm (7 ketukan)
+\setlength{\parskip}{0pt}            % Jarak antar paragraf 0pt (tanpa spasi kosong ekstra)
+\raggedbottom                        % Cegah peregangan vertikal LaTeX
+
+% Pengaturan Spasi Daftar (List: Enumerate & Itemize) tanpa spasi ekstra
+\setlist{
+  nosep,                             % Hapus space before/after dan space ekstra antar butir
+  topsep=0pt,
+  partopsep=0pt,
+  parsep=0pt,
+  itemsep=0pt,
+  leftmargin=0.75cm,                 % Indentasi sejajar alinea baru
+  labelsep=0.25cm
+}
+\setlist[enumerate]{label=\arabic*., ref=\arabic*}
+\setlist[itemize]{label=\textbullet}
+
+% 2. PENAMAAN STRUKTUR DOKUMEN (BAHASA INDONESIA)
+\renewcommand{\contentsname}{DAFTAR ISI}
+\renewcommand{\listfigurename}{DAFTAR GAMBAR}
+\renewcommand{\listtablename}{DAFTAR TABEL}
+\renewcommand{\bibname}{DAFTAR PUSTAKA}
+\renewcommand{\chaptername}{BAB}
+\renewcommand{\appendixname}{LAMPIRAN}
+\renewcommand{\figurename}{Gambar}
+\renewcommand{\tablename}{Tabel}
+
+% 3. FORMAT PENOMORAN PERSAMAAN, TABEL, DAN GAMBAR PER BAB
+\renewcommand{\thechapter}{\Roman{chapter}}
+\renewcommand{\thesection}{\arabic{chapter}.\arabic{section}}
+\renewcommand{\thesubsection}{\arabic{chapter}.\arabic{section}.\arabic{subsection}}
+\renewcommand{\theequation}{\arabic{chapter}-\arabic{equation}}
+\renewcommand{\thefigure}{\arabic{chapter}.\arabic{figure}}
+\renewcommand{\thetable}{\arabic{chapter}.\arabic{table}}
+
+% 4. FORMAT JUDUL BAB, SUB-BAB, DAN SUB-SUB-BAB (TITLESEC)
+\titleformat{\chapter}[display]
+  {\singlespacing\centering\bfseries}
+  {\fontsize{14pt}{18pt}\selectfont\MakeUppercase{\chaptername\ \thechapter}}
+  {0.5em}
+  {\fontsize{12pt}{16pt}\selectfont\MakeUppercase}
+
+\titlespacing*{\chapter}{0pt}{-35pt}{1.5em}
+
+% Format Sub-bab (Section)
+\titleformat{\section}
+  {\singlespacing\bfseries\fontsize{12pt}{16pt}\selectfont}
+  {\thesection}
+  {0.75em}
+  {}
+\titlespacing*{\section}{0pt}{1.0em}{0.2em}
+
+% Format Sub-sub-bab (Subsection)
+\titleformat{\subsection}
+  {\singlespacing\bfseries\fontsize{12pt}{16pt}\selectfont}
+  {\thesubsection}
+  {0.75em}
+  {}
+\titlespacing*{\subsection}{0pt}{0.8em}{0.2em}
+
+% Eliminasi jeda spasi ekstra jika \subsection langsung mengikuti \section
+\newif\ifdirectlyaftersection
+\directlyaftersectionfalse
+
+\pretocmd{\section}{\directlyaftersectiontrue}{}{}
+\pretocmd{\subsection}{%
+  \ifdirectlyaftersection
+    \vspace{-0.85em}%
+    \directlyaftersectionfalse
+  \fi
+}{}{}
+
+\makeatletter
+\everypar=\expandafter{\the\everypar \directlyaftersectionfalse}
+\makeatother
+
+% 5. LOGIKA PENOMORAN HALAMAN (FANCYHDR)
+\fancypagestyle{frontstyle}{
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+  \fancyfoot[C]{\thepage}
+}
+
+\fancypagestyle{mainstyle}{
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+  \fancyhead[R]{\thepage}
+}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+  \fancyfoot[C]{\thepage}
+}
+
+% 6. PENGATURAN SPASI & CAPTION OBJEK GAMBAR & TABEL
+\setlength{\floatsep}{4pt plus 1pt minus 1pt}
+\setlength{\textfloatsep}{6pt plus 1pt minus 1pt}
+\setlength{\intextsep}{0pt}
+\setlength{\dblfloatsep}{4pt plus 1pt minus 1pt}
+\setlength{\dbltextfloatsep}{6pt plus 1pt minus 1pt}
+
+\captionsetup[table]{
+  labelfont={bf},
+  textfont={normalfont},
+  justification=centering,
+  labelsep=space,
+  position=bottom,
+  aboveskip=4pt,
+  belowskip=2pt
+}
+
+\captionsetup[figure]{
+  labelfont={bf},
+  textfont={normalfont},
+  justification=centering,
+  labelsep=space,
+  position=bottom,
+  aboveskip=4pt,
+  belowskip=0pt
+}
+
+% 7. FORMAT KUTIPAN DAFTAR PUSTAKA APA
+\AtBeginDocument{
+  \renewcommand{\bibname}{DAFTAR PUSTAKA}
+  \renewcommand{\refname}{DAFTAR PUSTAKA}
+}
+\setlength{\bibhang}{0.75cm}
+\setlength{\bibsep}{6.9pt}
+
+% 8. PENYOROTAN KODE PROGRAM (LISTINGS)
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{backcolour}{rgb}{0.97,0.97,0.97}
+\definecolor{primaryblue}{rgb}{0.0,0.2,0.6}
+\definecolor{stringgreen}{rgb}{0.1,0.5,0.2}
+
+\lstdefinestyle{skripsicode}{
+  backgroundcolor=\color{backcolour},
+  commentstyle=\color{codegray}\itshape,
+  keywordstyle=\color{primaryblue}\bfseries,
+  numberstyle=\tiny\color{codegray},
+  stringstyle=\color{stringgreen},
+  basicstyle=\ttfamily\footnotesize\singlespacing,
+  breakatwhitespace=false,
+  breaklines=true,
+  captionpos=b,
+  keepspaces=true,
+  numbers=left,
+  numbersep=7pt,
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  tabsize=2,
+  frame=single,
+  rulecolor=\color{lightgray}
+}
+\lstset{style=skripsicode}
+
+% 9. HYPERLINK SETUP
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue,
+  pdfborder={0 0 0}
+}
+
+% 10. FORMAT DAFTAR ISI, DAFTAR GAMBAR, DAN DAFTAR TABEL (TITLETOC)
+\contentsmargin[1.5em]{1.2em}
+
+\titlecontents{chapter}[0pt]
+  {\vspace{0.35em}\bfseries}
+  {BAB \thecontentslabel\ }
+  {}
+  {\titlerule*[0.28pc]{.}\contentspage}
+
+\titlecontents{section}[1.6cm]
+  {\normalfont}
+  {\contentslabel[\thecontentslabel]{0.8cm}}
+  {}
+  {\titlerule*[0.28pc]{.}\contentspage}
+
+\titlecontents{subsection}[2.8cm]
+  {\normalfont}
+  {\contentslabel[\thecontentslabel]{1.2cm}}
+  {}
+  {\titlerule*[0.28pc]{.}\contentspage}
+
+\titlecontents{figure}[2.5cm]
+  {\normalfont}
+  {\contentslabel[\textbf{Gambar \thecontentslabel}]{2.5cm}}
+  {}
+  {\titlerule*[0.28pc]{.}\contentspage}
+
+\titlecontents{table}[2.2cm]
+  {\normalfont}
+  {\contentslabel[\textbf{Tabel \thecontentslabel}]{2.2cm}}
+  {}
+  {\titlerule*[0.28pc]{.}\contentspage}

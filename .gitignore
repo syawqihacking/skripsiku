@@ -1,0 +1,43 @@
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.dvi
+*.fdb_latexmk
+*.fls
+*.glg
+*.glo
+*.gls
+*.idx
+*.ilg
+*.ind
+*.ist
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+*.xdv
+
+# Editor and OS files
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
+
+# Python Virtual Environment & Bytecode Cache
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Experiment runtime logs & results
+experiments/logs/
+experiments/results/

@@ -1,0 +1,524 @@
+% ==============================================================================
+% BAB III: METODOLOGI PENELITIAN
+% ==============================================================================
+
+\chapter{METODOLOGI PENELITIAN}
+
+\section{Kerangka Penelitian}
+Penelitian ini dilaksanakan secara bertahap dan sistematis mengikuti metodologi eksperimen kuantitatif. Alur tahapan penelitian dirancang secara terstruktur untuk menjawab setiap rumusan masalah, mulai dari studi kepustakaan, perancangan arsitektur, konfigurasi lingkungan heterogen, pelaksanaan pengujian stres, pengumpulan dan audit data, hingga penarikan kesimpulan. Kerangka metodologi penelitian ini disajikan dalam bentuk diagram alir pada \figurename\ \ref{fig:kerangka_penelitian}.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=0.6cm and 1.0cm,
+        startstop/.style={rectangle, rounded corners=5pt, minimum width=3.6cm, minimum height=0.55cm, text centered, draw=black, fill=gray!20, font=\footnotesize\bfseries, inner sep=3pt},
+        process/.style={rectangle, minimum width=8.6cm, minimum height=0.65cm, text centered, text width=8.2cm, draw=black, fill=white, font=\footnotesize, inner sep=3pt},
+        decision/.style={diamond, aspect=2.4, text centered, text width=3.2cm, draw=black, fill=gray!10, font=\footnotesize, inner sep=2pt},
+        arrow/.style={-{Stealth[scale=0.9]}, thick}
+    ]
+        % Nodes
+        \node (start) [startstop] {Mulai};
+        
+        \node (lit) [process, below=0.36cm of start] {%
+            \textbf{1. Studi Literatur \& Analisis Kesenjangan Riset}\\
+            Kajian teori penyeimbang beban, karakteristik cgroups kernel Linux, dan sintesis 11 riset komparatif terdahulu
+        };
+        
+        \node (design) [process, below=0.36cm of lit] {%
+            \textbf{2. Perancangan Sistem \& Lingkungan Eksperimen}\\
+            Perancangan topologi Docker Bridge, penentuan rasio kapasitas 1:2:4, dan implementasi endpoint CPU-bound \& I/O-bound
+        };
+        
+        \node (impl) [process, below=0.36cm of design] {%
+            \textbf{3. Konfigurasi Penyeimbang Beban \& Telemetri}\\
+            Penyusunan profil NGINX dan HAProxy (RR, LC, WRR, WLC) serta integrasi instrumen metrik k6, cAdvisor, dan Prometheus
+        };
+        
+        \node (test) [process, below=0.36cm of impl] {%
+            \textbf{4. Pelaksanaan Uji Beban Bertahap (Stress Testing)}\\
+            Eksekusi 16 matriks skenario pengujian dengan variasi beban konkurensi bertahap (100 s.d. 1.000 VUs)
+        };
+        
+        \node (valid) [decision, below=0.36cm of test] {%
+            Data Metrik \& Log Valid/Lengkap?
+        };
+        
+        \node (analisis) [process, below=0.38cm of valid] {%
+            \textbf{5. Analisis Komparatif \& Audit Distribusi Beban}\\
+            Evaluasi throughput, latensi rata-rata, tail latency (p95 \& p99), fenomena CPU throttling, dan audit presisi beban aktual
+        };
+        
+        \node (selesai) [startstop, below=0.36cm of analisis] {Kesimpulan \& Selesai};
+
+        % Arrows
+        \draw [arrow] (start) -- (lit);
+        \draw [arrow] (lit) -- (design);
+        \draw [arrow] (design) -- (impl);
+        \draw [arrow] (impl) -- (test);
+        \draw [arrow] (test) -- (valid);
+        \draw [arrow] (valid) -- node[anchor=east, font=\scriptsize\bfseries] {Ya} (analisis);
+        \draw [arrow] (analisis) -- (selesai);
+        
+        % Loop back if data invalid
+        \draw [arrow] (valid.east) -- ++(1.0,0) node[anchor=south, font=\scriptsize\bfseries] {Tidak (Ulangi)} |- (test.east);
+    \end{tikzpicture}
+    \vspace{-4pt}
+    \caption{Diagram Alir Kerangka Metodologi Penelitian}
+    \label{fig:kerangka_penelitian}
+\end{figure}
+
+\clearpage
+
+Secara terperinci, tahapan-tahapan yang ditempuh dalam penelitian ini dirancang sebagai berikut:
+\begin{enumerate}
+    \item \textbf{Tahap Studi Literatur dan Analisis Kesenjangan Riset}: Mengkaji landasan teoretis arsitektur \textit{reverse proxy} pada lapisan aplikasi, mekanisme penjadwalan \textit{Completely Fair Scheduler} (CFS) pada isolasi kuota Linux \textit{Control Groups} (cgroups v2), serta menganalisis kesenjangan riset dari publikasi rujukan terdahulu guna memvalidasi orisinalitas perumusan masalah asimetri sumber daya.
+    \item \textbf{Tahap Perancangan Sistem dan Topologi Uji}: Merancang lingkungan uji komputasi \textit{bare-metal} pada laptop MSI Thin GF63 12UCX (Ubuntu 24.04 LTS) dengan partisi isolasi CPU (\textit{CPU pinning}) berbasis arsitektur hibrida P-Cores dan E-Cores, merancang jaringan privat \textit{Docker Bridge Network} (\texttt{skripsi-net}), merumuskan alokasi kuota komputasi heterogen berasio kapasitas 1:2:4 (0,5 vCPU/256 MB, 1,0 vCPU/512 MB, dan 2,0 vCPU/1024 MB), serta mengonstruksi beban kerja sintetis kontras (\textit{CPU-bound} dan \textit{I/O-bound}).
+    \item \textbf{Tahap Konfigurasi dan Instrumentasi Telemetri}: Menyusun profil konfigurasi penyeimbang beban NGINX dan HAProxy untuk empat algoritma penjadwalan (RR, LC, WRR, dan WLC), mengekualisasikan batas konkurensi serta parameter kernel (\textit{sysctl}), memformat rekaman log akses presisi tinggi, serta mengintegrasikan instrumen telemetri cAdvisor dan Prometheus untuk memantau pemotongan waktu prosesor (\textit{CPU throttling}).
+    \item \textbf{Tahap Pelaksanaan Pengujian Beban Stres}: Mengeksekusi 16 skenario pengujian faktorial penuh menggunakan perkakas Grafana k6 dengan profil konkurensi bertahap (\textit{ramping Virtual Users}) dari 100 hingga 1.000 pengguna virtual selama durasi sepuluh menit per iterasi, di mana masing-masing skenario diulang tiga kali replikasi independen guna menjamin reliabilitas empiris.
+    \item \textbf{Tahap Ekstraksi Metrik, Audit Log, dan Analisis Komparatif}: Menghimpun data metrik kinerja sisi klien (\textit{throughput}, rerata latensi, latensi ekor p95 dan p99) dan telemetri utilisasi sumber daya sisi peladen, dilanjutkan dengan audit presisi proporsi distribusi trafik aktual terhadap target ideal melalui kalkulasi MAPE serta uji signifikansi komparatif statistik.
+    \item \textbf{Tahap Sintesis Temuan dan Penarikan Kesimpulan}: Mengkaji korelasi kausal antara interaksi antrean penyeimbang beban terhadap dinamika penjadwalan kernel Linux, merumuskan matriks rekomendasi konfigurasi optimal bagi arsitektur heterogen, serta menyusun patokan empiris sebagai pedoman perancangan sistem berbasis kontainer.
+\end{enumerate}
+
+\clearpage
+
+\section{Perancangan Arsitektur dan Topologi Sistem}
+Arsitektur sistem dibangun di atas lingkungan kontainerisasi Docker yang diisolasi dalam satu jaringan privat (\textit{Docker Bridge Network}). Penyeimbang beban (NGINX atau HAProxy) diposisikan di baris depan (\textit{reverse proxy}) untuk menerima permintaan trafik HTTP dari mesin penguji (\textit{load generator}), kemudian meneruskannya ke tiga kontainer peladen aplikasi \textit{backend}, seperti diilustrasikan pada \figurename\ \ref{fig:topologi_sistem}.
+
+\begin{figure}[H]
+    \centering
+    \singlespacing
+    \begin{tikzpicture}[
+        scale=0.78, transform shape,
+        font=\scriptsize,
+        >=Stealth,
+        node distance=0.20cm and 0.8cm,
+        box/.style={
+            draw=black!80,
+            rounded corners=3pt,
+            fill=white,
+            thick,
+            inner sep=2.5pt,
+            align=center
+        },
+        clientbox/.style={
+            box,
+            fill=gray!10,
+            text width=3.3cm
+        },
+        lbbox/.style={
+            box,
+            fill=gray!15,
+            text width=2.5cm
+        },
+        bebox/.style={
+            box,
+            fill=white,
+            text width=4.0cm
+        }
+    ]
+        % -------------------------------------------------------------
+        % 1. CLIENT DOMAIN (Sisi Kiri) - Diisolasi pada E-Cores (CPU 8-11)
+        % -------------------------------------------------------------
+        \node[clientbox] (client) {
+            \textbf{Domain Pembangkit Beban}\\[1pt]
+            \textit{Isolasi CPU: E-Cores (CPU 8--11)}\\
+            (\texttt{taskset -c 8-11})\\[2pt]
+            \rule{2.8cm}{0.3pt}\\[2pt]
+            \textbf{Grafana k6}\\
+            \textit{Load Generator}\\
+            (100 s.d. 1.000 VUs)
+        };
+
+        % -------------------------------------------------------------
+        % 2. SERVER NODE - REVERSE PROXY (Tengah)
+        % -------------------------------------------------------------
+        \node[lbbox, right=1.6cm of client] (lb) {
+            \textbf{Reverse Proxy}\\[1pt]
+            \textbf{NGINX / HAProxy}\\
+            Port: \texttt{80}\\[2pt]
+            \rule{2.2cm}{0.3pt}\\[2pt]
+            \textit{Algoritma:}\\
+            RR, LC, WRR, WLC
+        };
+
+        % -------------------------------------------------------------
+        % 3. BACKEND CONTAINERS (Sisi Kanan)
+        % -------------------------------------------------------------
+        \node[bebox, right=1.1cm of lb] (be2) {
+            \textbf{\texttt{web-backend-2} (Tier Medium)}\\
+            1.0 vCPU $\mid$ 512 MB RAM $\mid$ Port 8080\\
+            Rasio Kapasitas: 2 $\mid$ Bobot: $w_2 = 2$
+        };
+        \node[bebox, above=0.16cm of be2] (be1) {
+            \textbf{\texttt{web-backend-1} (Tier Small)}\\
+            0.5 vCPU $\mid$ 256 MB RAM $\mid$ Port 8080\\
+            Rasio Kapasitas: 1 $\mid$ Bobot: $w_1 = 1$
+        };
+        \node[bebox, below=0.16cm of be2] (be3) {
+            \textbf{\texttt{web-backend-3} (Tier Large)}\\
+            2.0 vCPU $\mid$ 1024 MB RAM $\mid$ Port 8080\\
+            Rasio Kapasitas: 4 $\mid$ Bobot: $w_3 = 4$
+        };
+
+        % -------------------------------------------------------------
+        % 4. BOUNDING BOXES (FRAMES LINGKUNGAN)
+        % -------------------------------------------------------------
+        % Docker Network Frame
+        \node[draw=black!70, dashed, rounded corners=3pt, inner xsep=5pt, inner ysep=5pt,
+              fit=(be1) (be3)] (dockernet) {};
+        \node[anchor=south west, font=\tiny\bfseries, inner sep=1pt] at (dockernet.north west) {Docker Network (\texttt{skripsi-net}: 172.28.0.0/16)};
+
+        % Server Node Frame (P-Cores)
+        \node[draw=black!90, thick, rounded corners=4pt, inner xsep=6pt, inner ysep=7pt,
+              fit=(lb) (dockernet)] (servernode) {};
+        \node[anchor=south east, font=\scriptsize\bfseries, inner sep=1pt] at (servernode.north east) {Domain Peladen: P-Cores (CPU 0--7, \texttt{cpuset})};
+
+        % Outer Frame: Host Fisik (MSI Thin GF63 12UCX)
+        \node[draw=black!60, very thick, rounded corners=6pt, inner xsep=8pt, inner ysep=12pt,
+              fit=(client) (servernode)] (hostframe) {};
+        \node[anchor=north west, font=\tiny\bfseries, inner sep=2pt] at (hostframe.north west) {Host Fisik: Laptop MSI Thin GF63 12UCX (Ubuntu 24.04 LTS, RAM 16 GB, SSD 100 GB)};
+
+        % -------------------------------------------------------------
+        % 5. ARROWS & CONNECTIONS
+        % -------------------------------------------------------------
+        % Local Loopback Connection
+        \draw[->, thick] (client.east) -- node[above, font=\tiny\bfseries, align=center] {Trafik HTTP\\(Port 80)} 
+                                          node[below, font=\tiny, align=center] {Local Loopback\\(\texttt{127.0.0.1})} (lb.west);
+
+        % Distribution to Backends
+        \draw[->, thick] (lb.east) -- ++(0.5,0) |- (be1.west);
+        \draw[->, thick] (lb.east) -- (be2.west);
+        \draw[->, thick] (lb.east) -- ++(0.5,0) |- (be3.west);
+
+    \end{tikzpicture}
+    \caption{Arsitektur dan Topologi Pengujian Mandiri Kluster Kontainer Heterogen}
+    \label{fig:topologi_sistem}
+\end{figure}
+
+Topologi kluster kontainer \textit{backend} dirancang dengan konfigurasi kapasitas sumber daya yang heterogen menggunakan fitur pembatasan kuota \textit{Control Groups} (cgroups v2) pada Docker Compose, sebagaimana ditunjukkan pada \tablename\ \ref{tab:spesifikasi_backend}.
+
+\begin{table}[H]
+    \centering
+    \caption{Spesifikasi Alokasi Sumber Daya Kontainer Backend Heterogen}
+    \label{tab:spesifikasi_backend}
+    \small
+    \begin{tabularx}{\textwidth}{|p{3.8cm}|*{4}{>{\centering\arraybackslash}X|}}
+        \hline
+        \rowcolor[gray]{0.85}
+        \textbf{Nama Kontainer} & \textbf{Alokasi vCPU} & \textbf{Batas RAM} & \textbf{Rasio Kapasitas} & \textbf{Bobot Ideal ($w_i$)} \\
+        \hline
+        \texttt{web-backend-1} & 0.5 vCPU & 256 MB  & 1 & 1 \\
+        \hline
+        \texttt{web-backend-2} & 1.0 vCPU & 512 MB  & 2 & 2 \\
+        \hline
+        \texttt{web-backend-3} & 2.0 vCPU & 1024 MB & 4 & 4 \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+Guna menjamin keabsahan data empiris dan mencegah bias pengukuran akibat perebutan sumber daya prosesor antara pembangkit beban (\textit{load generator}) dan peladen yang diuji (\textit{server under test}), lingkungan eksperimen diimplementasikan pada perangkat keras \textit{bare-metal} laptop MSI Thin GF63 12UCX dengan partisi sistem operasi mandiri Ubuntu 24.04 LTS. Eksperimen memanfaatkan arsitektur prosesor hibrida Intel Core i5-12450H melalui mekanisme pemisahan core secara terisolasi (\textit{CPU affinity / CPU pinning}), sebagaimana dirinci pada \tablename\ \ref{tab:spesifikasi_lingkungan_uji}.
+
+\begin{table}[H]
+    \centering
+    \caption{Spesifikasi Perangkat Keras dan Lingkungan Pengujian Mandiri}
+    \label{tab:spesifikasi_lingkungan_uji}
+    \small
+    \begin{tabularx}{\textwidth}{|p{3.2cm}|p{4.6cm}|>{\raggedright\arraybackslash}X|}
+        \hline
+        \rowcolor[gray]{0.85}
+        \textbf{Komponen Sistem} & \textbf{Spesifikasi Rinci} & \textbf{Alokasi dan Peran Pengujian} \\
+        \hline
+        \textbf{Model Perangkat} & MSI Thin GF63 12UCX & Perangkat pengujian komputasi \textit{bare-metal} mandiri \\
+        \hline
+        \textbf{Prosesor (CPU)} & Intel® Core™ i5-12450H (8 \textit{Cores} / 12 \textit{Threads}) & 4 P-Cores (CPU 0--7) untuk Server \& Kontainer, 4 E-Cores (CPU 8--11) untuk k6 \\
+        \hline
+        \textbf{Memori Utama} & 16 GB DDR4 3200 MHz & Alokasi memori sistem dan seluruh kontainer Docker \\
+        \hline
+        \textbf{Media Penyimpanan} & NVMe PCIe SSD (Partisi 100 GB) & Partisi mandiri sistem operasi Ubuntu dan berkas log \\
+        \hline
+        \textbf{Sistem Operasi} & Ubuntu 24.04 LTS (Kernel Linux 6.8) & \textit{Host} sistem pendukung cgroups v2 dan \textit{sysctl tuning} \\
+        \hline
+        \textbf{Engine Kontainer} & Docker Engine v27.x \& Compose v2.x & Isolasi kuota cgroups v2 dan \textit{bridge network} \\
+        \hline
+        \textbf{Pembangkit Beban} & Grafana k6 v0.50+ & Pengujian beban bertahap (100 s.d. 1.000 VUs) via \texttt{taskset} \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+Penerapan strategi isolasi CPU berbasis arsitektur hibrida Alder Lake-H dirancang secara metodis untuk menjamin kepatuhan prinsip \textit{ceteris paribus}:
+\begin{enumerate}
+    \item \textbf{Alokasi Kluster Peladen pada P-Cores}: Seluruh kontainer \textit{backend} dan \textit{reverse proxy} dipasangi parameter \texttt{cpuset: "0-7"} pada Docker Compose sehingga dieksekusi secara eksklusif pada empat \textit{Performance-cores} (P-Cores) ber-Hyper-Threading. P-Cores memiliki arsitektur IPC dan frekuensi \textit{clock} yang seragam (hingga 4{,}40 GHz). Dengan total kebutuhan kuota komputasi ketiga kontainer \textit{backend} sebesar $0{,}5 + 1{,}0 + 2{,}0 = 3{,}5$ vCPU serta sisa kuota untuk proses penyeimbang beban, utilisasi prosesor berada pada kondisi ideal tanpa risiko perebutan siklus tak terkontrol (\textit{CPU overcommitment}).
+    \item \textbf{Isolasi Pembangkit Beban pada E-Cores}: Grafana k6 dijalankan dengan instruksi \texttt{taskset -c 8-11} sehingga terkunci secara terisolasi pada empat \textit{Efficient-cores} (E-Cores). Dengan demikian, eksekusi ribuan koneksi konkuren oleh Grafana k6 tidak sedikit pun memotong siklus prosesor (\textit{CPU stealing}) dari peladen yang diuji, sekaligus mengeliminasi variabilitas \textit{jitter} jaringan eksternal melalui antarmuka \textit{loopback} lokal (\texttt{127.0.0.1}).
+\end{enumerate}
+
+\subsection{Ekualisasi Parameter Konfigurasi Penyeimbang Beban (Fair Testing)}
+Dalam eksperimen perbandingan kinerja perangkat lunak sistem, penerapan prinsip keadilan pengujian (\textit{fair testing} atau \textit{ceteris paribus}) merupakan syarat mutlak agar perbedaan hasil evaluasi murni merefleksikan karakteristik arsitektur internal masing-masing proksi, bukan akibat ketimpangan alokasi parameter konfigurasi \citep{rawls2022load}. Oleh karena itu, NGINX dan HAProxy dikonfigurasikan dengan parameter batas konkurensi, mekanisme \textit{event loop}, manajemen koneksi persisten (\textit{keepalive}), dan durasi batas waktu (\textit{timeout}) yang setara, serta didukung oleh penyelarasan parameter kernel Linux (\textit{sysctl}) pada peladen \textit{host}, sebagaimana disajikan pada \tablename\ \ref{tab:ekualisasi_parameter}.
+
+\begin{table}[H]
+    \centering
+    \caption{Ekualisasi Parameter Konfigurasi Penyeimbang Beban dan Kernel Linux}
+    \label{tab:ekualisasi_parameter}
+    \small
+    \begin{tabularx}{\textwidth}{|p{3.4cm}|X|X|}
+        \hline
+        \rowcolor[gray]{0.85}
+        \textbf{Dimensi Pengaturan} & \textbf{Konfigurasi NGINX 1.27} & \textbf{HAProxy 2.8} \\
+        \hline
+        Kapasitas Konkurensi & \texttt{worker\_connections 10240} & \texttt{maxconn 20000} \\
+        \hline
+        Arsitektur Proses & \texttt{worker\_processes auto} & \texttt{nbthread auto} (1 proses utama) \\
+        \hline
+        Mesin Event Kernel & \texttt{use epoll; multi\_accept on} & Native Linux \texttt{epoll} \\
+        \hline
+        Koneksi Upstream & \texttt{keepalive 64; HTTP 1.1} & \texttt{option http-server-close} \\
+        \hline
+        Batas Waktu Koneksi & \texttt{proxy\_connect\_timeout 5s} & \texttt{timeout connect 5000ms} \\
+        \hline
+        Batas Waktu Klien/Server & \texttt{proxy\_read\_timeout 50s} & \texttt{timeout client/server 50000ms} \\
+        \hline
+        Pemeriksaan Kesehatan & Pasif (\texttt{max\_fails=3}) & Aktif (\texttt{option httpchk}) \\
+        \hline
+        Tuning Kernel Host & \multicolumn{2}{p{9.3cm}|}{\raggedright \texttt{net.core.somaxconn = 65535}, \texttt{net.ipv4.tcp\_max\_syn\_backlog = 8192}, \texttt{fs.file-max = 2097152}, \texttt{net.ipv4.ip\_local\_port\_range = 1024 65535}} \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+Penyelarasan parameter kernel pada \tablename\ \ref{tab:ekualisasi_parameter} berfungsi untuk menghilangkan potensi hambatan (\textit{bottleneck}) di tingkat sistem operasi Linux, seperti antrean soket jaringan yang penuh (\textit{socket backlog overflow}) atau kehabisan deskriptor berkas (\textit{file descriptor exhaustion}) saat menerima ribuan koneksi konkuren secara serentak.
+
+\section{Perancangan Beban Kerja dan Kalibrasi Sistem}
+Untuk menguji batas ketahanan penyeimbang beban saat menghadapi karakteristik trafik yang bertolak belakang, aplikasi \textit{backend} yang dibangun menggunakan bahasa pemrograman Go mengekspos dua \textit{endpoint} spesifik:
+\begin{enumerate}
+    \item \textbf{Endpoint CPU-Bound (\texttt{/api/cpu})}: Menjalankan kalkulasi kriptografi intensif berupa 10.000 iterasi fungsi \textit{hash} SHA-256 berantai (\textit{chained hashing}) pada setiap permintaan HTTP yang masuk. Operasi ini dirancang murni mengonsumsi siklus unit logika dan aritmatika (ALU) prosesor tanpa alokasi memori dinamis (\textit{zero heap allocation}), sehingga secara deterministik memicu pemotongan kuota waktu komputasi (\textit{CPU throttling}) ketika kapasitas vCPU cgroups terlampaui \citep{shetty2025cpu}.
+    \item \textbf{Endpoint I/O-Bound (\texttt{/api/io})}: Menjalankan penundaan waktu asinkron (\textit{non-blocking asynchronous sleep}) selama 150 ms untuk mereplikasi latensi kueri basis data atau komunikasi mikrolayanan eksternal. Pola ini menahan soket koneksi HTTP tetap aktif terbuka tanpa membebani utilisasi CPU, sehingga secara khusus menguji kapasitas manajemen antrean deskriptor koneksi dan efisiensi struktur data penjadwalan (\texttt{ebtree} versus alokasi memori bersama).
+\end{enumerate}
+
+\subsection{Tahap Kalibrasi Beban dan Profil Uji Bertahap (Ramping Workload)}
+Pemilihan beban konkurensi tidak dilakukan secara konstan melainkan menerapkan profil penambahan beban bertahap (\textit{ramping workload profile}) selama durasi total sepuluh menit per sesi pengujian. Pendekatan ini memungkinkan observasi transisi fase kinerja sistem secara dinamis: dari kondisi beban rendah, kondisi beban optimal, hingga terjadinya saturasi dan degradasi latensi ekor \citep{wodislawski2026ponytail}. Kurva tahapan pengujian Grafana k6 diilustrasikan pada \figurename\ \ref{fig:profil_ramping_k6}.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        scale=0.92,
+        font=\footnotesize,
+        >=Stealth
+    ]
+        % Koordinat: X = Waktu (menit, 1 cm = 1 menit), Y = VUs (1 cm = 200 VUs)
+        % 100 VUs = 0.5 cm, 500 VUs = 2.5 cm, 1000 VUs = 5.0 cm
+
+        % Shading zona tahapan
+        \fill[blue!5] (0,0) rectangle (1.0, 5.2);
+        \fill[green!5] (1.0,0) rectangle (4.0, 5.2);
+        \fill[orange!6] (4.0,0) rectangle (8.0, 5.2);
+        \fill[gray!6] (8.0,0) rectangle (10.0, 5.2);
+
+        % Grid horizontal
+        \draw[dashed, gray!45] (0, 0.5) node[left, font=\scriptsize, black] {100} -- (10.0, 0.5);
+        \draw[dashed, gray!45] (0, 2.5) node[left, font=\scriptsize, black] {500} -- (10.0, 2.5);
+        \draw[dashed, gray!45] (0, 5.0) node[left, font=\scriptsize, black] {1.000} -- (10.0, 5.0);
+
+        % Grid vertikal
+        \draw[dashed, gray!45] (1.0, 0) node[below, font=\scriptsize, black] {1} -- (1.0, 5.2);
+        \draw[dashed, gray!45] (4.0, 0) node[below, font=\scriptsize, black] {4} -- (4.0, 5.2);
+        \draw[dashed, gray!45] (8.0, 0) node[below, font=\scriptsize, black] {8} -- (8.0, 5.2);
+        \draw[dashed, gray!45] (10.0, 0) node[below, font=\scriptsize, black] {10} -- (10.0, 5.2);
+
+        % Sumbu koordinat
+        \draw[->, thick] (0,0) -- (10.5,0) node[below right, font=\footnotesize] {\textbf{Waktu (Menit)}};
+        \draw[->, thick] (0,0) -- (0,5.5) node[above, font=\footnotesize] {\textbf{Virtual Users (VUs)}};
+        \node[below left, font=\scriptsize] at (0,0) {0};
+
+        % Kurva Ramping k6
+        \draw[line width=1.4pt, blue!80!black] 
+            (0,0) -- (1.0, 0.5) -- (4.0, 2.5) -- (8.0, 5.0) -- (10.0, 0);
+
+        % Titik data
+        \filldraw[black] (0,0) circle (1.8pt);
+        \filldraw[blue!80!black] (1.0, 0.5) circle (2.2pt) node[above left, font=\scriptsize\bfseries] {100 VUs};
+        \filldraw[blue!80!black] (4.0, 2.5) circle (2.2pt) node[above left, font=\scriptsize\bfseries] {500 VUs};
+        \filldraw[red!80!black] (8.0, 5.0) circle (2.5pt) node[above, font=\scriptsize\bfseries] {1.000 VUs (Puncak)};
+        \filldraw[black] (10.0, 0) circle (1.8pt);
+
+        % Anotasi Tahapan
+        \node[text centered, font=\scriptsize\bfseries, align=center] at (0.5, 4.4) {Tahap 1:\\Pemanasan\\(Warm-up)};
+        \node[text centered, font=\scriptsize\bfseries, align=center] at (2.5, 4.4) {Tahap 2:\\Beban Menengah\\(Linear Load)};
+        \node[text centered, font=\scriptsize\bfseries, align=center] at (6.0, 4.4) {Tahap 3:\\Beban Puncak \& Saturasi\\(Peak Stress)};
+        \node[text centered, font=\scriptsize\bfseries, align=center] at (9.0, 4.4) {Tahap 4:\\Pendinginan\\(Cool-down)};
+
+        % Penanda telemetri
+        \draw[<->, thick, teal] (0.2, 1.5) -- (3.8, 1.5) node[midway, fill=white, inner sep=2pt, font=\tiny\bfseries, text=teal] {Sampling Telemetri: per 5 detik};
+    \end{tikzpicture}
+    \caption{Profil Penambahan Beban Bertahap Grafana k6 (Ramping Workload Profile)}
+    \label{fig:profil_ramping_k6}
+\end{figure}
+
+Siklus pengujian pada \figurename\ \ref{fig:profil_ramping_k6} terbagi ke dalam empat segmen fungsional:
+\begin{enumerate}
+    \item \textbf{Tahap Pemanasan (\textit{Warm-up}, Menit ke-0 s.d. 1)}: Beban dinaikkan bertahap menuju 100 VUs untuk menginisialisasi \textit{TCP connection pool}, pengisian memori \textit{cache}, serta kompilasi \textit{Just-In-Time} (JIT) pada kernel tanpa mencatat lonjakan anomali awal.
+    \item \textbf{Tahap Beban Menengah (\textit{Mid-load}, Menit ke-1 s.d. 4)}: Beban dinaikkan secara stabil dari 100 hingga 500 VUs guna mengevaluasi linearitas respons throughput dan stabilitas latensi pada kondisi kapasitas kerja nominal.
+    \item \textbf{Tahap Beban Puncak (\textit{Peak Stress}, Menit ke-4 s.d. 8)}: Beban dipacu mencapai 1.000 VUs konkuren secara intensif untuk memicu saturasi kuota cgroups, menguji ketahanan antrean koneksi, serta merekam lonjakan \textit{tail latency} ekstrem (p95 dan p99).
+    \item \textbf{Tahap Pendinginan (\textit{Cool-down}, Menit ke-8 s.d. 10)}: Beban diturunkan bertahap menuju 0 VU guna memastikan pengosongan antrean soket (\textit{draining}), penutupan koneksi \textit{graceful}, serta stabilisasi parameter memori peladen.
+\end{enumerate}
+
+\section{Matriks Skenario Pengujian dan Protokol Replikasi}
+Pengujian eksperimen dirancang menggunakan pendekatan faktorial penuh (\textit{full factorial design}) yang mengombinasikan seluruh variabel bebas penelitian. Ruang kombinasi skenario pengujian ($\mathcal{S}$) dibentuk melalui perkalian Kartesius (\textit{Cartesian product}) antar-faktor:
+\begin{equation}
+    \mathcal{S} = B \times A \times W
+    \label{eq:ruang_skenario}
+\end{equation}
+dengan jumlah total kombinasi skenario pengujian ($N_S$) yang dieksekusi dihitung melalui Persamaan (\ref{eq:total_skenario}):
+\begin{equation}
+    N_S = |B| \times |A| \times |W| = 2 \times 4 \times 2 = 16
+    \label{eq:total_skenario}
+\end{equation}
+di mana:
+\begin{itemize}[nosep]
+    \item $B$ adalah himpunan mesin penyeimbang beban (NGINX dan HAProxy) dengan kardinalitas $|B| = 2$.
+    \item $A$ adalah himpunan algoritma penjadwalan (RR, LC, WRR, dan WLC) dengan kardinalitas $|A| = 4$.
+    \item $W$ adalah himpunan profil beban kerja (\textit{CPU-bound} dan \textit{I/O-bound}) dengan kardinalitas $|W| = 2$.
+\end{itemize}
+
+Guna menjamin reliabilitas data empiris dan mengantisipasi fluktuasi sesaat (*system jitter/outlier*), setiap skenario pengujian dieksekusi sebanyak $k = 3$ kali replikasi independen. Dengan demikian, total akumulasi sesi pengujian ($N_{\text{total}}$) yang dilaksanakan adalah:
+\begin{equation}
+    N_{\text{total}} = N_S \times k = 16 \times 3 = 48 \text{ sesi pengujian}
+    \label{eq:total_eksekusi}
+\end{equation}
+
+Rincian matriks keenam belas kombinasi skenario pengujian beserta kode identifikasi dan alokasi replikasinya disajikan secara komprehensif pada \tablename\ \ref{tab:matriks_skenario}.
+
+\begin{table}[H]
+    \centering
+    \caption{Matriks 16 Skenario Pengujian Faktorial Penuh dan Protokol Replikasi}
+    \label{tab:matriks_skenario}
+    \footnotesize
+    \begin{tabularx}{\textwidth}{|c|>{\centering\arraybackslash}p{1.4cm}|X|>{\centering\arraybackslash}p{1.7cm}|>{\centering\arraybackslash}p{1.4cm}|>{\centering\arraybackslash}p{1.7cm}|}
+        \hline
+        \rowcolor[gray]{0.85}
+        \textbf{Kode} & \textbf{Load Balancer} & \textbf{Algoritma} & \textbf{Beban Kerja} & \textbf{Replikasi ($k$)} & \textbf{Durasi (Mnt)} \\
+        \hline
+        S-01 & NGINX & Round Robin (RR) & CPU-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-02 & NGINX & Least Connections (LC) & CPU-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-03 & NGINX & Weighted Round Robin (WRR) & CPU-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-04 & NGINX & Weighted Least Connections (WLC) & CPU-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-05 & NGINX & Round Robin (RR) & I/O-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-06 & NGINX & Least Connections (LC) & I/O-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-07 & NGINX & Weighted Round Robin (WRR) & I/O-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-08 & NGINX & Weighted Least Connections (WLC) & I/O-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-09 & HAProxy & Round Robin (RR) & CPU-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-10 & HAProxy & Least Connections (LC) & CPU-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-11 & HAProxy & Weighted Round Robin (WRR) & CPU-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-12 & HAProxy & Weighted Least Connections (WLC) & CPU-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-13 & HAProxy & Round Robin (RR) & I/O-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-14 & HAProxy & Least Connections (LC) & I/O-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-15 & HAProxy & Weighted Round Robin (WRR) & I/O-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        S-16 & HAProxy & Weighted Least Connections (WLC) & I/O-Bound & 3 & 30 ($3 \times 10'$) \\
+        \hline
+        \multicolumn{4}{|c|}{\textbf{Total Akumulasi Durasi Pengujian Eksperimen}} & \textbf{48 Sesi} & \textbf{480 Mnt (8 Jam)} \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+Untuk mencegah bias yang diakibatkan oleh residu memori sistem maupun sisa koneksi aktif antar-pengujian, diterapkan protokol pengendalian eksperimen:
+\begin{enumerate}
+    \item \textbf{Pembersihan Lingkungan (\textit{Container Recycling})}: Setiap kali pergantian skenario atau replikasi, seluruh kluster kontainer dihentikan dan dihapus volumenya (\texttt{docker compose down -v}), kemudian diinisialisasi ulang dari kondisi bersih (\textit{clean state}).
+    \item \textbf{Pembersihan Penyangga Sistem Operasi}: Kernel peladen mengeksekusi instruksi pembersihan penyangga memori melalui perintah \texttt{sync} dan \texttt{echo 3 > /proc/sys/vm/drop\_caches}.
+    \item \textbf{Jeda Pendinginan (\textit{Inter-trial Cooldown})}: Diberlakukan waktu jeda 60 detik antar-iterasi guna stabilisasi temperatur prosesor peladen.
+\end{enumerate}
+
+\section{Instrumen dan Prosedur Pengumpulan Data}
+Pengumpulan data kinerja dilakukan secara terotomatisasi dengan instrumen sebagai berikut:
+\begin{enumerate}
+    \item \textbf{Grafana k6}: Mengukur metrik sisi klien yang mencakup total permintaan sukses, \textit{throughput} (req/s), latensi rata-rata (\textit{mean}), persentil latensi p90, p95, dan p99, serta persentase \textit{failed requests} \citep{k6docs2024}.
+    \item \textbf{cAdvisor \& Prometheus}: Memantau utilisasi sumber daya kontainer sisi peladen secara \textit{real-time} (interval 5 detik), mencakup utilisasi waktu CPU, pemotongan kuota prosesor (\textit{CPU throttling}), serta konsumsi memori kerja fisik kontainer.
+    \item \textbf{Log Access Parser}: Melakukan audit terhadap rekaman log akses penyeimbang beban berpresisi mikrodetik untuk memverifikasi apakah proporsi jumlah permintaan aktual yang diterima masing-masing kontainer (\texttt{web-1}, \texttt{web-2}, \texttt{web-3}) presisi terhadap rasio bobot kapasitas 1:2:4.
+\end{enumerate}
+
+\section{Teknik Analisis Data dan Formulasi Metrik}
+Untuk menjawab rumusan masalah secara objektif dan matematis, data empiris yang diekstraksi dari instrumen pengujian dianalisis menggunakan formulasi evaluasi sebagai berikut:
+
+\subsection{Evaluasi Presisi Distribusi Beban Aktual}
+Tingkat presisi distribusi beban aktual diukur dengan membandingkan proporsi volume permintaan yang diterima masing-masing kontainer \textit{backend} ($P_{\text{aktual}, i}$) terhadap nilai target probabilitas teoretis alokasi cgroups ($P_{\text{ideal}, i}$):
+\begin{equation}
+    P_{\text{ideal}, i} = \frac{w_i}{\sum_{j=1}^{n} w_j} \times 100\%, \quad P_{\text{aktual}, i} = \frac{N_i}{\sum_{j=1}^{n} N_j} \times 100\%
+    \label{eq:distribusi_beban}
+\end{equation}
+di mana untuk kontainer berbobot $w = \{1, 2, 4\}$, nilai target teoretis berturut-turut adalah 14,29\%, 28,57\%, dan 57,14\% (atau 33,33\% untuk algoritma tanpa bobot), sedangkan $N_i$ adalah total permintaan sukses yang dilayani kontainer ke-$i$. Deviasi distribusi beban aktual terhadap target teoretis dihitung menggunakan \textit{Mean Absolute Percentage Error} (MAPE):
+\begin{equation}
+    \text{MAPE} = \frac{1}{n} \sum_{i=1}^{n} \left| \frac{P_{\text{aktual}, i} - P_{\text{ideal}, i}}{P_{\text{ideal}, i}} \right| \times 100\%
+    \label{eq:mape}
+\end{equation}
+Nilai MAPE yang mendekati 0\% merefleksikan presisi distribusi beban yang sempurna sesuai perbandingan kuota kapasitas cgroups.
+
+\subsection{Kuantifikasi Dampak CPU Throttling dan Latensi Ekor}
+Dampak pembatasan kuota Completely Fair Scheduler (CFS) kernel Linux pada kontainer berkapasitas rendah dievaluasi melalui rasio pemotongan CPU (\textit{CPU Throttling Ratio} / $R_{\text{throttle}}$), sedangkan anomali degradasi performa ekstrem diukur melalui rasio amplifikasi latensi ekor (\textit{Tail Latency Amplification Ratio} / $R_{\text{tail}}$):
+\begin{equation}
+    R_{\text{throttle}} = \frac{\Delta \texttt{nr\_throttled}}{\Delta \texttt{nr\_periods}} \times 100\%, \quad R_{\text{tail}} = \frac{L_{p99}}{L_{\text{mean}}}
+    \label{eq:throttle_and_tail}
+\end{equation}
+di mana $\Delta \texttt{nr\_throttled}$ adalah pertambahan periode kuota CFS cgroups yang terpotong dari total $\Delta \texttt{nr\_periods}$ pada telemetri cAdvisor, sedangkan $L_{p99}$ dan $L_{\text{mean}}$ berturut-turut merupakan latensi persentil ke-99 dan latensi rata-rata dari Grafana k6. Nilai $R_{\text{tail}}$ yang tinggi mengindikasikan ketidakstabilan parah akibat penumpukan antrean koneksi pada kontainer yang mengalami saturasi komputasi.
+
+\subsection{Agregasi Statistik dan Uji Signifikansi Komparatif}
+Untuk menyintesis hasil pengujian dari $k = 3$ kali replikasi independen, data diekstraksi ke dalam nilai rerata sampel ($\bar{x}$), deviasi standar ($\sigma$), serta Selang Kepercayaan 95\% (\textit{Confidence Interval} / CI):
+\begin{equation}
+    \bar{x} = \frac{1}{k} \sum_{j=1}^{k} x_j, \quad \sigma = \sqrt{\frac{1}{k-1} \sum_{j=1}^{k} (x_j - \bar{x})^2}, \quad \text{CI}_{95\%} = \bar{x} \pm t_{\alpha/2, k-1} \left( \frac{\sigma}{\sqrt{k}} \right)
+    \label{eq:rerata_dan_ci}
+\end{equation}
+di mana $t_{0{,}025; 2} = 4{,}303$ merupakan nilai kritis distribusi $t$-Student untuk derajat kebebasan $df = 3 - 1 = 2$ pada taraf signifikansi $\alpha = 0{,}05$. Keunggulan komparatif antara HAProxy terhadap NGINX diukur melalui rasio perolehan kinerja relatif (\textit{Relative Performance Gain} / $\Delta\%$):
+\begin{equation}
+    \Delta\% = \left( \frac{M_{\text{HAProxy}} - M_{\text{NGINX}}}{M_{\text{NGINX}}} \right) \times 100\%
+    \label{eq:relative_gain}
+\end{equation}
+di mana $M$ merepresentasikan metrik evaluasi (nilai positif merefleksikan keunggulan \textit{throughput}, nilai negatif merefleksikan efisiensi latensi).
+
+Guna membuktikan disparitas performa signifikan secara statistik dan bukan fluktuasi acak, dilakukan uji hipotesis komparatif: \textbf{Paired Student's $t$-test} diterapkan pada metrik parametrik normal (\textit{throughput} dan rerata latensi), sedangkan \textbf{Wilcoxon Signed-Rank Test} diterapkan pada latensi ekor (p95 dan p99) yang berkarakteristik non-parametrik condong (\textit{skewed distribution}) \citep{li2025tailbench} pada taraf $\alpha = 0{,}05$.
+
+\section{Waktu, Tempat, dan Jadwal Pelaksanaan Penelitian}
+Pelaksanaan penelitian ini dirancang berlangsung secara terstruktur dan intensif selama tiga bulan kalender akademik, terhitung mulai dari bulan Oktober 2026 hingga Desember 2026. Penelitian dilaksanakan secara mandiri menggunakan \textbf{Perangkat Keras Laptop Pribadi Peneliti} (MSI Thin GF63 12UCX) sebagai lingkungan uji beban komputasi \textit{bare-metal} terisolasi, serta didukung oleh fasilitas \textbf{Laboratorium Komputasi dan Jaringan Komputer} Program Studi Informatika FST Universitas K.H. Bahaudin Mudhary Madura sebagai lokasi perancangan sistem, analisis data telemetri, dan penyusunan naskah skripsi. Rincian pembagian jadwal kegiatan penelitian selama tiga bulan pelaksanaan disajikan pada \tablename\ \ref{tab:jadwal_penelitian}.
+
+\begin{table}[H]
+    \centering
+    \caption{Jadwal dan Rencana Pelaksanaan Kegiatan Penelitian (Oktober--Desember 2026)}
+    \label{tab:jadwal_penelitian}
+    \singlespacing
+    \small
+    \begin{tabularx}{\textwidth}{|c|X|*{3}{>{\centering\arraybackslash}p{1.7cm}|}}
+        \hline
+        \rowcolor[gray]{0.85}
+        & & \multicolumn{3}{c|}{\textbf{Bulan Pelaksanaan (2026)}} \\
+        \cline{3-5}
+        \rowcolor[gray]{0.85}
+        \multirow{-2}{*}{\textbf{No}} & \multirow{-2}{*}{\textbf{Tahapan Kegiatan Penelitian}} & \textbf{Oktober} & \textbf{November} & \textbf{Desember} \\
+        \hline
+        1 & Studi literatur dan perumusan naskah proposal skripsi & $\bullet$ & & \\
+        \hline
+        2 & Seminar Proposal (Sempro) dan penyempurnaan metodologi & $\bullet$ & & \\
+        \hline
+        3 & Perancangan topologi Docker Compose dan \textit{backend} Go (\textit{CPU \& I/O bound}) & $\bullet$ & & \\
+        \hline
+        4 & Konfigurasi, ekualisasi \textit{tuning fair testing} NGINX dan HAProxy & & $\bullet$ & \\
+        \hline
+        5 & Pelaksanaan uji beban stres Grafana k6 (16 skenario $\times$ 3 replikasi) & & $\bullet$ & \\
+        \hline
+        6 & Ekstraksi telemetri cAdvisor/Prometheus dan audit presisi beban (MAPE) & & $\bullet$ & \\
+        \hline
+        7 & Analisis data komparatif, visualisasi hasil, dan uji signifikansi statistik & & & $\bullet$ \\
+        \hline
+        8 & Penyusunan laporan akhir skripsi, artikel ilmiah, dan Sidang Skripsi & & & $\bullet$ \\
+        \hline
+    \end{tabularx}
+\end{table}
+

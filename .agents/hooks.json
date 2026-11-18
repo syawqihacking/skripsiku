@@ -1,0 +1,16 @@
+{
+  "latex-autocheck": {
+    "PostToolUse": [
+      {
+        "matcher": "replace_file_content|write_to_file|multi_replace_file_content",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".agents/scripts/latex-autocheck.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

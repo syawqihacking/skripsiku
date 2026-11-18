@@ -1,0 +1,131 @@
+% ==============================================================================
+% DAFTAR SIMBOL DAN LAMBANG
+% Sesuai Pedoman Penulisan Skripsi FST UNIBA Madura 2026 (Lampiran 12)
+% ==============================================================================
+
+\clearpage
+\phantomsection
+\pagestyle{frontstyle}
+
+\begin{center}
+    {\fontsize{14pt}{18pt}\selectfont \bfseries DAFTAR SIMBOL}
+\end{center}
+
+\vspace{0.5cm}
+
+\noindent\begin{longtable}{|>{\centering\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}p{8.0cm}|>{\centering\arraybackslash}p{2.6cm}|}
+    \hline
+    \rowcolor[gray]{0.85}
+    \textbf{Simbol} & \textbf{Keterangan / Besaran} & \textbf{Satuan / Dimensi} \\
+    \hline
+    \endfirsthead
+    \hline
+    \rowcolor[gray]{0.85}
+    \textbf{Simbol} & \textbf{Keterangan / Besaran} & \textbf{Satuan / Dimensi} \\
+    \hline
+    \endhead
+    \hline
+    \endfoot
+
+    % Simbol Matematika & Pemodelan Transformer
+    $\text{Attention}(\cdot)$ & Fungsi pemetaan atensi terbobot (\textit{Scaled Dot-Product Attention}) & Skalar / Matriks \\
+    \hline
+    $\mathbf{b}$ & Vektor bias pada lapisan klasifikasi linier & $\mathbb{R}^{3}$ \\
+    \hline
+    $C$ & Jumlah total kelas kategori sentimen target ($C = 3$) & Bilangan Bulat \\
+    \hline
+    $c$ & Indeks kategori kelas sentimen ($c \in \{\text{positif, netral, negatif}\}$) & - \\
+    \hline
+    $\mathcal{D}_{\text{src}}$ & Domain data sumber pelatihan formal (Korpus NusaX Madura) & Himpunan Data \\
+    \hline
+    $\mathcal{D}_{\text{tgt}}$ & Domain data target pengujian informal (Korpus TikTok Madura) & Himpunan Data \\
+    \hline
+    $d_k$ & Dimensi vektor proyeksi kunci (\textit{Key}) pada kepala atensi ($d_k = 64$) & Dimensi / Bilangan \\
+    \hline
+    $d_{\text{model}}$ & Dimensi representasi vektor tersembunyi enkoder ($d_{\text{model}} = 768$) & Dimensi / Bilangan \\
+    \hline
+    $F1_c$ & Nilai skor harmonik F1 pada kelas sentimen ke-$c$ & Skalar [$0, 1$] \\
+    \hline
+    $F1_{\text{cross-domain}}$ & Skor Macro F1 hasil evaluasi \textit{zero-shot} pada korpus target & Skalar [$0, 1$] \\
+    \hline
+    $F1_{\text{in-domain}}$ & Skor Macro F1 hasil evaluasi model \textit{baseline} domain sumber & Skalar [$0, 1$] \\
+    \hline
+    $FN$ & \textit{False Negative} (jumlah sampel positif terprediksi negatif) & Sampel \\
+    \hline
+    $FP$ & \textit{False Positive} (jumlah sampel negatif terprediksi positif) & Sampel \\
+    \hline
+    $h$ & Jumlah kepala atensi mandiri (\textit{attention heads}, $h = 12$) & Bilangan Bulat \\
+    \hline
+    $\mathbf{h}_{\langle s \rangle}$ & Vektor status tersembunyi representasi token klasifikasi awal & $\mathbb{R}^{768}$ \\
+    \hline
+    $K$ & Matriks representasi proyeksi kunci (\textit{Key matrix}) & Matriks \\
+    \hline
+    $\mathcal{L}_{\text{CE}}$ & Nilai fungsi kerugian klasifikasi entropi silang (\textit{Cross-Entropy}) & Skalar Positif \\
+    \hline
+    $\mathcal{L}_{\text{MLM}}$ & Nilai fungsi kerugian pra-pelatihan \textit{Masked Language Modeling} & Skalar Positif \\
+    \hline
+    $\mathcal{M}$ & Himpunan indeks token kalimat yang disamarkan (\textit{masked}) & Himpunan Indeks \\
+    \hline
+    $\text{Macro F1}$ & Rata-rata aritmatika tak berbobot skor F1 lintas seluruh kelas & Skalar [$0, 1$] \\
+    \hline
+    $\text{Macro Precision}$ & Rata-rata aritmatika skor presisi lintas seluruh kelas sentimen & Skalar [$0, 1$] \\
+    \hline
+    $\text{Macro Recall}$ & Rata-rata aritmatika skor \textit{recall} lintas seluruh kelas sentimen & Skalar [$0, 1$] \\
+    \hline
+    $\text{MultiHead}(\cdot)$ & Fungsi penggabungan representasi banyak kepala atensi linier & Matriks \\
+    \hline
+    $P(\cdot)$ & Nilai peluang atau fungsi probabilitas posterior & Peluang [$0, 1$] \\
+    \hline
+    $P_e$ & Proporsi kesepakatan teoretis peluang acak antar-anotator & Skalar [$0, 1$] \\
+    \hline
+    $P_o$ & Proporsi kesepakatan observasi empiris antar-anotator & Skalar [$0, 1$] \\
+    \hline
+    $P_{\text{src}}(X)$ & Distribusi marginal probabilitas fitur masukan domain sumber & Distribusi Probabilitas \\
+    \hline
+    $P_{\text{tgt}}(X)$ & Distribusi marginal probabilitas fitur masukan domain target & Distribusi Probabilitas \\
+    \hline
+    $\text{Precision}_c$ & Rasio ketepatan prediksi model pada kelas sentimen ke-$c$ & Skalar [$0, 1$] \\
+    \hline
+    $Q$ & Matriks representasi proyeksi kueri (\textit{Query matrix}) & Matriks \\
+    \hline
+    $\text{Recall}_c$ & Rasio daya ingat / sensitivitas model pada kelas sentimen ke-$c$ & Skalar [$0, 1$] \\
+    \hline
+    $S_k$ & Skenario pengujian eksperimen ke-$k$ ($k \in \{\text{S0, S1, S2a, S2b, S2c, S2d}\}$) & Kode Skenario \\
+    \hline
+    $TN$ & \textit{True Negative} (jumlah sampel kelas negatif terprediksi benar) & Sampel \\
+    \hline
+    $TP$ & \textit{True Positive} (jumlah sampel kelas positif terprediksi benar) & Sampel \\
+    \hline
+    $V$ & Matriks representasi proyeksi nilai (\textit{Value matrix}) & Matriks \\
+    \hline
+    $W^O$ & Matriks bobot proyeksi keluaran \textit{Multi-Head Attention} & $\mathbb{R}^{768 \times 768}$ \\
+    \hline
+    $W_i^{\{Q, K, V\}}$ & Matriks bobot transformasi linier kepala atensi ke-$i$ & $\mathbb{R}^{768 \times 64}$ \\
+    \hline
+    $\mathbf{W}$ & Matriks bobot transformasi linier lapisan klasifikasi akhir & $\mathbb{R}^{3 \times 768}$ \\
+    \hline
+    $w_i$ & Token kata asli ke-$i$ pada sekuens kalimat masukan & Token / Subkata \\
+    \hline
+    $\mathbf{x}$ & Vektor atau sekuens kalimat teks masukan bahasa Madura & Sekuens Token \\
+    \hline
+    $\tilde{\mathbf{x}}$ & Sekuens teks kalimat masukan yang telah disamarkan sebagian & Sekuens Token \\
+    \hline
+    $\mathcal{Y}$ & Ruang himpunan kategori label sentimen ($\mathcal{Y} = \{1, 2, 3\}$) & Himpunan Label \\
+    \hline
+    $y$ & Label kelas sentimen kebenaran dasar (\textit{ground truth}) & Label Kategori \\
+    \hline
+    $y_c$ & Indikator biner kebenaran kelas sentimen ke-$c$ ($y_c \in \{0, 1\}$) & Biner $\{0, 1\}$ \\
+    \hline
+    $\hat{y}$ & Kategori label kelas sentimen hasil keputusan prediksi akhir & Label Kategori \\
+    \hline
+    $\hat{y}_c$ & Nilai probabilitas posterior terprediksi untuk kelas ke-$c$ & Peluang [$0, 1$] \\
+    \hline
+    $\Delta_{\text{drop}}$ & Kesenjangan penurunan performa Macro F1 absolut lintas domain & Skalar [$0, 1$] \\
+    \hline
+    $\%\Delta_{\text{drop}}$ & Persentase penurunan kinerja relatif akibat pergeseran domain & Persen (\%) \\
+    \hline
+    $\theta$ & Himpunan seluruh parameter bobot komputasi model terpelajar & Ruang Parameter \\
+    \hline
+    $\kappa$ & Koefisien reliabilitas kesepakatan antar-anotator (Fleiss/Cohen) & Skalar [$-1, 1$] \\
+    \hline
+\end{longtable}

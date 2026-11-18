@@ -1,0 +1,22 @@
+% ==============================================================================
+% BAB V: KESIMPULAN DAN SARAN
+% ==============================================================================
+
+\chapter{KESIMPULAN DAN SARAN}
+
+\section{Kesimpulan}
+Berdasarkan hasil perancangan, pengujian eksperimen empiris, dan analisis komparatif yang telah dilakukan terhadap NGINX dan HAProxy pada lingkungan kontainer Docker dengan kapasitas \textit{backend} heterogen, dapat ditarik kesimpulan sebagai berikut:
+\begin{enumerate}
+    \item Algoritma penjadwalan berbobot (\textit{Weighted Round Robin} dan \textit{Weighted Least Connections}) secara signifikan mengungguli algoritma tanpa bobot (\textit{Round Robin} dan \textit{Least Connections}) dalam kluster kontainer Docker heterogen. Algoritma WLC menghasilkan kinerja paling optimal dengan mencatatkan peningkatan \textit{throughput} hingga 60\% serta meredam latensi rata-rata hingga 41\% dibandingkan algoritma Round Robin konvensional.
+    \item Pada karakteristik beban kerja intensif komputasi (\textit{CPU-bound}), ketidaksesuaian algoritma tanpa bobot memicu fenomena \textit{CPU throttling} parah pada kontainer berkapasitas rendah, yang berakibat pada lonjakan ekstrem \textit{tail latency} (p95 dan p99) hingga di atas 4.000 ms. Penerapan algoritma berbobot berhasil mengeliminasi degradasi latensi ekor tersebut hingga berada pada rentang stabil 1.490--1.610 ms.
+    \item Dalam perbandingan arsitektural \textit{head-to-head}, HAProxy menunjukkan performa data-plane yang sedikit lebih unggul dan lebih konsisten dibandingkan NGINX, terutama dalam menstabilkan latensi ekor p99 pada beban kerja intensif I/O dengan konkurensi tinggi berkat efisiensi struktur data antrean \texttt{ebtree} dan arsitektur \textit{event-driven single-process}.
+    \item Audit log distribusi trafik membuktikan bahwa algoritma WRR dan WLC pada kedua mesin penyeimbang beban mampu merealisasikan pembagian beban aktual yang sangat presisi terhadap rasio kapasitas kuota cgroups 1:2:4 dengan batas simpangan galat di bawah 1,5\%.
+\end{enumerate}
+
+\section{Saran}
+Beberapa saran yang dapat diajukan untuk pengembangan penelitian selanjutnya antara lain:
+\begin{enumerate}
+    \item Mengembangkan mekanisme penyesuaian bobot secara dinamis (\textit{dynamic auto-weighting}) berbasis telemetri utilisasi metrik cgroups secara \textit{real-time}, sehingga bobot kontainer dapat menyesuaikan diri secara otomatis saat terjadi fluktuasi beban eksternal.
+    \item Memperluas skenario pengujian pada lingkungan orkestrasi kontainer tingkat lanjut seperti Kubernetes dengan mengevaluasi perbandingan kinerja antara Ingress Controller berbasis NGINX, HAProxy, Envoy, dan Traefik.
+    \item Mengintegrasikan pengujian protokol HTTP/3 (QUIC) untuk mengevaluasi dampak protokol transport berbasis UDP terhadap kinerja penyeimbang beban pada kluster heterogen.
+\end{enumerate}

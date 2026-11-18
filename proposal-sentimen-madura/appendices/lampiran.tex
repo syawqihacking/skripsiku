@@ -1,0 +1,205 @@
+% ==============================================================================
+% LAMPIRAN PROPOSAL SKRIPSI
+% Proposal Skripsi: Evaluasi Generalisasi Lintas Domain Model Analisis Sentimen Bahasa Madura
+% Penulis: Muhammad Syawqi Muhtadabillah (NIM: 2302310276)
+% ==============================================================================
+
+\clearpage
+\phantomsection
+\chapter*{LAMPIRAN}
+\addcontentsline{toc}{chapter}{LAMPIRAN}
+
+\vspace{0.3cm}
+
+% ==============================================================================
+% LAMPIRAN 1: PEDOMAN OPERASIONAL ANOTASI SENTIMEN
+% ==============================================================================
+\section*{Lampiran 1: Pedoman Operasional Anotasi Sentimen Tiga Kelas Bahasa Madura}
+
+Panduan ini dibuat sebagai acuan kerja bagi 2 orang penutur asli bahasa Madura yang bertindak sebagai penilai mandiri (anotator). Tugas mereka adalah menentukan label sentimen (positif, netral, atau negatif) pada 500 data komentar TikTok yang menjadi sampel penelitian.
+
+\begin{enumerate}\singlespacing
+    \item \textbf{Prinsip Dasar Anotasi}:
+    \begin{itemize}
+        \item Proses penilaian data dilakukan dengan melihat konteks kalimat, nada emosi, dan maksud tersirat dari penulis di media sosial. Penilaian ini sengaja menghindari penerjemahan kata demi kata secara harfiah agar makna asli dari setiap komentar tetap terjaga.
+        \item Setiap komentar diberikan satu label sentimen tunggal yang saling lepas (\textit{mutually exclusive}): Positif (+1), Netral (0), atau Negatif (-1).
+    \end{itemize}
+
+    \item \textbf{Kriteria Label Positif (\textit{positive})}:
+    \begin{itemize}
+        \item Memuat ekspresi apresiasi, pujian, rasa senang, rasa syukur, doa keberkahan, keceriaan, atau dukungan moral terhadap kreator maupun konteks video.
+        \item Sebagai contohnya: bagus (bagus), ontong (untung/bersyukur), senneng (senang), bhungah (gembira), rajen (rajin), penter (pintar), mator sakalangkong (terima kasih banyak), moga sukses, sehat teros.
+    \end{itemize}
+
+    \item \textbf{Kriteria Label Netral (\textit{neutral})}:
+    \begin{itemize}
+        \item Untuk kategori komentar yang netral, ciri-cirinya adalah kalimat tersebut murni hanya bertanya atau memberikan informasi tanpa ada rasa marah, senang, atau kecewa. Contohnya seperti orang yang menanyakan lokasi, menanyakan harga, meminta konfirmasi teknis, atau sekadar menyebutkan waktu dan nama orang secara datar.
+        \item Contohnya adalah: dimma (di mana), arapa / a’apa (kenapa/mengapa), barempa / berempa (berapa), bila (kapan), kennengenna (tempatnya), kake / be’en (kamu), aroka (itu).
+    \end{itemize}
+
+    \item \textbf{Kriteria Label Negatif (\textit{negative})}:
+    \begin{itemize}
+        \item Sementara untuk kategori komentar yang negatif, ciri-cirinya sudah jelas, yaitu berisi ungkapan kemarahan, kekecewaan, atau rasa tidak suka. Kalimatnya bisa berupa ejekan, nyinyiran, keluhan tentang barang atau layanan yang jelek, hingga komentar yang tujuannya memang untuk menjatuhkan atau merendahkan orang lain.
+        \item Contohnya adalah: jelek, sossa (susah/sedih), todus (malu), bheddhek (busuk), nyapcap (mengoceh tak karuan), lok penter (tidak pintar/bodoh), tadek gunana (tidak berguna), kecewa, mangkel.
+    \end{itemize}
+
+    \item \textbf{Pedoman Kasus Khusus}:
+    \begin{itemize}
+        \item \textbf{Sarkasme dan Satire}: Di media sosial, banyak netizen yang kalau berkomentar itu memakai sindiran atau sarkasme. Jadi, jika ada komentar yang memakai kata-kata pujian tetapi maksud aslinya adalah mengejek, komentar itu wajib kita beri nilai Negatif. Contohnya seperti kalimat: `Hebat onggu, la ancor kabbhi' yang artinya `Hebat sekali, sudah hancur semua'. Kata `hebat' di sana bukan pujian asli, melainkan cemoohan.
+        \item \textbf{Campur Kode (\textit{Code-Mixing})}: Untuk komentar yang campuran bahasa Madura dan bahasa Indonesia, cara menilainya adalah dengan melihat arti keseluruhan kalimat dan apa yang paling menjadi inti bahasannya. Jadi, kita tidak menilai sepotong-sepotong per kata, melainkan melihat ke mana arah fokus komentar si netizen secara utuh.
+        \item \textbf{Bahasa tidak baku}: Di TikTok, orang sering menulis kata bahasa Madura dengan ejaan yang berbeda-beda tergantung bunyinya. Contohnya, ada yang menulis dibi’ atau dhibi’, onggu atau ongghu, dan tadek atau tadhek. Menghadapi variasi ketikan ini, cara menilainya adalah dengan mengembalikan kata tersebut ke arti aslinya sesuai pemahaman orang Madura asli. Jadi, perbedaan cara mengetik ini tidak akan merusak penilaian maknanya.
+    \end{itemize}
+\end{enumerate}
+
+\newpage
+
+% ==============================================================================
+% LAMPIRAN 2: FORMAT DAN INSTRUMEN LEMBAR KERJA ANOTASI
+% ==============================================================================
+\section*{Lampiran 2: Format dan Instrumen Lembar Kerja Anotasi Data Komentar TikTok}
+
+Berikut adalah desain format lembar kerja (\textit{Annotation Worksheet}) yang digunakan oleh anotator penutur asli bahasa Madura untuk menginput hasil anotasi mandiri dan proses rekonsiliasi konsensus:
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|c|p{3.9cm}|p{2.2cm}|c|c|c|c|}
+\hline
+\rowcolor{gray!20}
+\textbf{ID Sampel} & \textbf{Teks Komentar Asli} & \textbf{Leksikon Madura} & \textbf{A1} & \textbf{A2} & \textbf{Status} & \textbf{Konsensus} \\
+\hline
+TK-MAD-0001 & Mator sakalangkong tretan, videona sae onggu & sakalangkong, tretan, sae, onggu & +1 & +1 & Sesuai & Positif \\
+\hline
+TK-MAD-0002 & Sampeyan jualan e dimma kak? barempa hargana? & sampeyan, e dimma, barempa & 0 & 0 & Sesuai & Netral \\
+\hline
+TK-MAD-0003 & Pelayananna bheddhek onggu, tadek gunana pesen & bheddhek, onggu, tadek gunana & -1 & -1 & Sesuai & Negatif \\
+\hline
+TK-MAD-0004 & Hebat onggu barangnga, sampek ancor kabbhi & onggu, ancor, kabbhi & -1 & +1 & Diskrepansi & Negatif$^*$ \\
+\hline
+TK-MAD-0005 & Barangnya bagus kak, tape ongkir ka Madura larang & tape, ka Madura, larang & +1 & -1 & Diskrepansi & Positif$^{**}$ \\
+\hline
+TK-MAD-0006 & Mon la tak endek ya la pas mole teros & mon, tak endek, la, pas, mole & 0 & 0 & Sesuai & Netral \\
+\hline
+\dots & \dots & \dots & \dots & \dots & \dots & \dots \\
+\hline
+TK-MAD-0500 & \multicolumn{6}{l|}{\textit{[Sampel baris ke-500 korpus komentar TikTok terkurasi]}} \\
+\hline
+\end{tabular}
+\vspace{0.1cm}
+\begin{flushleft}
+\footnotesize
+\textit{Keterangan}: A1 = Anotator 1; A2 = Anotator 2; (+1) = Positif, (0) = Netral, (-1) = Negatif.\\
+$^*$Hasil rekonsiliasi diskrepansi sarkasme: disepakati bernada negatif.\\
+$^{**}$Hasil rekonsiliasi aspek ulasan produk utama: disepakati bernada positif terhadap produk.\\
+\end{flushleft}
+\caption{Format Instrumen Lembar Kerja Pelabelan Data Komentar TikTok}
+\label{tab:format_lembar_anotasi}
+\end{table}
+
+\newpage
+
+% ==============================================================================
+% LAMPIRAN 3: FORMULASI DAN MATRIKS PENGUJIAN KESEPAKATAN ANTAR-ANOTATOR
+% ==============================================================================
+\section*{Lampiran 3: Formulasi dan Matriks Pengujian Kesepakatan Antar-Anotator}
+
+Guna menjamin reliabilitas dan objektivitas pelabelan korpus data target yang melibatkan dua hingga tiga anotator penutur asli bahasa Madura, penulis melakukan pengujian kesepakatan antar-penilai untuk memastikan hasil anotasi memiliki derajat konsistensi tinggi serta bebas dari bias subjektif. Pengujian derajat reliabilitas kesepakatan antar-anotator dihitung menggunakan koefisien statistik Cohen's Kappa ($\kappa$). Rumus matematika yang digunakan adalah:
+\begin{equation}
+\label{eq:lampiran_kappa}
+\kappa = \frac{P_o - P_e}{1 - P_e}
+\end{equation}
+di mana $P_o$ menyatakan proporsi kesepakatan teramati (\textit{observed agreement}), dan $P_e$ menyatakan peluang kesepakatan karena kebetulan (\textit{expected chance agreement}):
+\begin{equation}
+\label{eq:lampiran_pe}
+P_o = \frac{\sum_{i=1}^{k} n_{ii}}{N}, \quad P_e = \sum_{i=1}^{k} \frac{n_{i\cdot} n_{\cdot i}}{N^2}
+\end{equation}
+dengan $N = 500$ sampel, $k = 3$ kategori sentimen, $n_{ii}$ adalah frekuensi diagnosa kesepakatan, serta $n_{i\cdot}$ dan $n_{\cdot i}$ berturut-turut adalah total marjinal baris dan kolom.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\rowcolor{gray!20}
+\textbf{Anotator 1 $\backslash$ Anotator 2} & \textbf{Negatif (-1)} & \textbf{Netral (0)} & \textbf{Positif (+1)} & \textbf{Total Baris} \\
+\hline
+\textbf{Negatif (-1)} & $n_{11}$ (Sepakat) & $n_{12}$ & $n_{13}$ & $n_{1\cdot}$ \\
+\hline
+\textbf{Netral (0)} & $n_{21}$ & $n_{22}$ (Sepakat) & $n_{23}$ & $n_{2\cdot}$ \\
+\hline
+\textbf{Positif (+1)} & $n_{31}$ & $n_{32}$ & $n_{33}$ (Sepakat) & $n_{3\cdot}$ \\
+\hline
+\textbf{Total Kolom} & $n_{\cdot 1}$ & $n_{\cdot 2}$ & $n_{\cdot 3}$ & $N = 500$ \\
+\hline
+\end{tabular}
+\caption{Rancangan Matriks Kontingensi $3 \times 3$ Tabulasi Silang Antar-Anotator}
+\label{tab:matriks_kontingensi}
+\end{table}
+
+\vspace{0.2cm}
+Tingkat reliabilitas kesepakatan dievaluasi mengacu pada skala standar Landis \& Koch:
+\begin{itemize}\singlespacing
+    \item Nilai $\kappa < 0{,}20$: Kesepakatan sangat rendah (\textit{slight agreement}).
+    \item Nilai $0{,}21 \le \kappa \le 0{,}40$: Kesepakatan cukup (\textit{fair agreement}).
+    \item Nilai $0{,}41 \le \kappa \le 0{,}60$: Kesepakatan sedang (\textit{moderate agreement}).
+    \item Nilai $0{,}61 \le \kappa \le 0{,}80$: Kesepakatan substansial (\textit{substantial agreement}).
+    \item Nilai $0{,}81 \le \kappa \le 1{,}00$: Kesepakatan hampir sempurna (\textit{almost perfect agreement}).
+\end{itemize}
+
+Ambang batas penerimaan kualitas korpus dalam penelitian ini ditetapkan minimal $\kappa \ge 0{,}70$. Apabila terjadi diskrepansi label antar-anotator ($n_{ij}$ di mana $i \neq j$), dilakukan protokol rekonsiliasi bersama penutur asli senior untuk mencapai konsensus mutlak 100\% sebagai label \textit{ground truth}.
+
+\newpage
+
+% ==============================================================================
+% LAMPIRAN 4: RENCANA JADWAL PELAKSANAAN PENELITIAN
+% ==============================================================================
+\section*{Lampiran 4: Rencana Jadwal Pelaksanaan Penelitian}
+
+Pelaksanaan penelitian skripsi ini dirancang berlangsung selama 5 (lima) Minggu setelah seminar proposal dengan rincian jadwal kegiatan sebagai berikut:
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|c|>{\raggedright\arraybackslash}p{5.2cm}|c|c|c|c|c|}
+\hline
+\rowcolor{gray!20}
+\textbf{No} & \textbf{Tahapan Kegiatan Penelitian} & \textbf{Mgg 1} & \textbf{Mgg 2} & \textbf{Mgg 3} & \textbf{Mgg 4} & \textbf{Mgg 5} \\
+\hline
+1 & Seminar Proposal \& Penyempurnaan Usulan & $\blacksquare$ & & & & \\
+\hline
+2 & Pengambilan Data Manual Komentar TikTok & $\blacksquare$ & $\blacksquare$ & & & \\
+\hline
+3 & Kurasi Leksikon Madura \& Pra-pemrosesan Teks & & $\blacksquare$ & & & \\
+\hline
+4 & Pelabelan Korpus oleh 2 Penutur Asli & & $\blacksquare$ & & & \\
+\hline
+5 & Uji Reliabilitas Kappa \& Rekonsiliasi Konsensus & & $\blacksquare$ & & & \\
+\hline
+6 & Partisi Korpus Terstratifikasi (Test, Val, Pool) & & & $\blacksquare$ & & \\
+\hline
+7 & Pelatihan Baseline XLM-RoBERTa di NusaX & & & $\blacksquare$ & & \\
+\hline
+8 & Pengujian Zero-Shot Cross-Domain ke TikTok & & & $\blacksquare$ & $\blacksquare$ & \\
+\hline
+9 & Eksperimen Adaptasi Bertahap (10\%, 25\%, 50\%, 100\%) & & & & $\blacksquare$ & \\
+\hline
+10 & Evaluasi Metrik Macro F1 \& Analisis Error Linguistik & & & & $\blacksquare$ & \\
+\hline
+11 & Penyusunan Laporan Lengkap Skripsi (Bab IV--V) & & & & $\blacksquare$ & $\blacksquare$ \\
+\hline
+12 & Ujian Sidang Akhir Skripsi & & & & & $\blacksquare$ \\
+\hline
+\end{tabular}
+\vspace{0.1cm}
+\begin{flushleft}
+\footnotesize
+\textit{Keterangan}: Tanda ($\blacksquare$) menunjukkan alokasi waktu pelaksanaan kegiatan per bulan.\\
+\end{flushleft}
+\caption{Rencana Jadwal Pelaksanaan Penelitian (Gantt Chart)}
+\label{tab:jadwal_penelitian}
+\end{table}

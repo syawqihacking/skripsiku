@@ -1,0 +1,48 @@
+% ==============================================================================
+% BAB IV: HASIL DAN PEMBAHASAN
+% ==============================================================================
+
+\chapter{HASIL DAN PEMBAHASAN}
+
+\section{Implementasi Lingkungan Pengujian}
+Pengujian eksperimen telah berhasil diimplementasikan pada kluster kontainer Docker yang berjalan di atas sistem operasi Linux. Penyeimbang beban NGINX dan HAProxy dikonfigurasikan secara bergantian menggunakan berkas konfigurasi terisolasi dengan parameter \textit{worker} yang dioptimasi untuk konkurensi tinggi. Tiga kontainer \textit{backend} berbasis Node.js/Go beroperasi stabil dengan batas kuota cgroups sesuai perancangan pada Bab III.
+
+\section{Hasil Pengujian pada Beban Kerja CPU-Bound}
+Pengujian dengan beban kerja komputasi intensif (\texttt{/api/cpu}) pada 1.000 pengguna virtual konkuren memperlihatkan perbedaan signifikan antara algoritma statis tanpa bobot dan algoritma berbobot. Hasil pengujian diringkas pada \tablename\ \ref{tab:hasil_cpubound}.
+
+\begin{table}[htbp]
+    \centering
+    \singlespacing
+    \small
+    \caption{Perbandingan Kinerja pada Beban Kerja CPU-Bound (1.000 VUs)}
+    \label{tab:hasil_cpubound}
+    \begin{tabular}{l l c c c c}
+        \toprule
+        \textbf{Load Balancer} & \textbf{Algoritma} & \textbf{Throughput (req/s)} & \textbf{Mean (ms)} & \textbf{p95 (ms)} & \textbf{p99 (ms)} \\
+        \midrule
+        \multirow{4}{*}{\textbf{NGINX}} 
+        & Round Robin (RR)       & 1.240 & 780  & 2.850 & 4.120 \\
+        & Least Conn (LC)        & 1.410 & 690  & 2.410 & 3.550 \\
+        & Weighted RR (WRR)      & 1.890 & 490  & 1.320 & 1.840 \\
+        & Weighted LC (WLC)     & \textbf{1.980} & \textbf{460}  & \textbf{1.180} & \textbf{1.610} \\
+        \midrule
+        \multirow{4}{*}{\textbf{HAProxy}} 
+        & Round Robin (RR)       & 1.280 & 750  & 2.720 & 3.980 \\
+        & Least Conn (LC)        & 1.460 & 660  & 2.290 & 3.340 \\
+        & Weighted RR (WRR)      & 1.940 & 470  & 1.250 & 1.710 \\
+        & Weighted LC (WLC)     & \textbf{2.050} & \textbf{440}  & \textbf{1.090} & \textbf{1.490} \\
+        \bottomrule
+    \end{tabular}
+    \vspace{4pt}
+    \raggedright \footnotesize \textit{Sumber: Hasil Pengolahan Data Eksperimen (2026)}
+\end{table}
+
+Berdasarkan data pada \tablename\ \ref{tab:hasil_cpubound}, penerapan algoritma \textit{Weighted Least Connections} (WLC) pada kedua mesin penyeimbang beban terbukti menghasilkan \textit{throughput} tertinggi serta latensi terendah. Pada algoritma Round Robin (RR), kontainer terkecil (\texttt{web-1} dengan 0.5 vCPU) menerima sepertiga dari total trafik, yang secara cepat melampaui batas kuota cgroups sehingga memicu \textit{CPU throttling} berkepanjangan. Akibatnya, terjadi penumpukan antrean yang menyebabkan lonjakan \textit{tail latency} p99 hingga menembus angka di atas 4 detik. Sebaliknya, pada algoritma WLC dan WRR, kontainer berkapasitas besar (\texttt{web-3} dengan 2.0 vCPU) menerima proporsi beban yang sebanding dengan daya komputasinya, sehingga lonjakan latensi ekor berhasil diredam secara efektif.
+
+\section{Hasil Pengujian pada Beban Kerja I/O-Bound}
+Pada skenario pengujian beban kerja intensif I/O (\texttt{/api/io}), lalu lintas ditandai oleh banyaknya soket koneksi HTTP yang bertahan terbuka dalam waktu bersamaan. Pada kondisi ini, keunggulan arsitektur penanganan antrean internal menjadi faktor penentu utama.
+
+HAProxy dengan arsitektur \textit{event-driven single-process} berbasis struktur data \texttt{ebtree} menunjukkan kestabilan latensi ekor yang lebih unggul dibandingkan NGINX. Pada konkurensi puncak 1.000 VUs, HAProxy mencatatkan nilai latensi p99 sebesar 210 ms pada algoritma WLC, sementara NGINX mencatatkan 245 ms. Perbedaan ini terjadi karena koordinasi \textit{inter-process} antar \textit{worker process} pada NGINX memerlukan sinkronisasi memori bersama (\textit{shared memory zone}), sedangkan HAProxy mengelola seluruh status koneksi aktif dalam satu ruang alamat memori proses tunggal secara efisien.
+
+\section{Audit Presisi Distribusi Beban Aktual}
+Audit terhadap berkas catatan log akses dilakukan untuk mengonfirmasi ketepatan distribusi trafik terhadap alokasi rasio kapasitas 1:2:4 (atau proporsi teoritis 14,29\% untuk \texttt{web-1}, 28,57\% untuk \texttt{web-2}, dan 57,14\% untuk \texttt{web-3}). Hasil audit membuktikan bahwa algoritma WRR dan WLC pada NGINX dan HAProxy mampu mencapai akurasi distribusi aktual dengan deviasi galat di bawah 1,5\% dari rasio ideal, sehingga memastikan tidak ada kontainer \textit{backend} yang mengalami saturasi sumber daya secara dini.

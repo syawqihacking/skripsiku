@@ -1,0 +1,54 @@
+% ==============================================================================
+% BAB I: PENDAHULUAN
+% ==============================================================================
+
+\chapter{PENDAHULUAN}
+
+\section{Latar Belakang}
+Evolusi arsitektur \textit{web service} modern telah bergeser secara masif dari peladen fisik (\textit{bare-metal}) dan mesin virtual (\textit{Virtual Machine} / VM) menuju ekosistem kontainerisasi berbasis Docker \citep{khan2026decomposing, gurramkonda2026docker, nurzaman2022analisis}. Kontainerisasi menawarkan portabilitas tinggi, efisiensi konsumsi sumber daya komputasi, serta kecepatan \textit{deployment} aplikasi berskala besar. Namun, dalam lingkungan produksi yang sesungguhnya, kluster kontainer \textit{backend} jarang beroperasi dalam kondisi homogen yang ideal. Pembatasan kuota komputasi melalui fitur \textit{Control Groups} (cgroups) pada kernel Linux, fragmentasi perangkat keras, serta alokasi dinamis pada arsitektur \textit{microservices} menciptakan asimetri kapasitas komputasi (baik alokasi vCPU maupun kuota RAM) antar kontainer \textit{backend} \citep{shetty2025cpu, faridah2026performance}. Dalam praktik industri komputasi awan, variasi kapasitas ini umumnya mengadopsi pola tingkatan instansi berjenjang (\textit{instance tiering} atau \textit{t-shirt sizing}: \textit{Small}, \textit{Medium}, \textit{Large}) dengan rasio penggandaan kapasitas eksponensial seperti 1:2:4, yang mencerminkan heterogenitas terencana antar node layanan.
+
+Penerapan penyeimbang beban (\textit{load balancer}) seperti NGINX dan HAProxy telah menjadi standar industri dalam mendistribusikan lalu lintas HTTP menuju jajaran peladen aplikasi \citep{buke2026load, sakib2025dynamic, arini2025perbandingan}. Kendati demikian, kedua perangkat lunak penyeimbang beban tersebut dibangun di atas filosofi arsitektur internal yang berbeda secara fundamental. NGINX mengadopsi model arsitektur \textit{multi-process} berbasis \textit{master-worker}, di mana sekumpulan proses pekerja (\textit{worker}) mengeksekusi \textit{non-blocking event-loop} secara mandiri dalam ruang memori terpisah. Sebaliknya, HAProxy dirancang murni sebagai proksi lapis aplikasi berkinerja tinggi yang beroperasi dengan model proses tunggal berorientasi peristiwa (\textit{event-driven single process}) dan memanfaatkan struktur data pohon biner elastis (\textit{elastic binary tree} / \texttt{ebtree}) berkecepatan $O(1)$ untuk manajemen antrean koneksi serta penjadwalan waktu respons deterministik \citep{tarreau2024haproxy}. Perbedaan arsitektural konkurensi ini diprediksi menghasilkan respons stabilitas yang sangat berlainan ketika penyeimbang beban berhadapan dengan kluster kontainer \textit{backend} heterogen, terlebih saat menerima karakteristik beban kerja yang bertolak belakang, yaitu beban intensif komputasi (\textit{CPU-bound}) versus beban intensif masukan/keluaran (\textit{I/O-bound}) \citep{baeturohman2024analisis}.
+
+Mayoritas penelitian terdahulu yang membandingkan performa NGINX dan HAProxy pada lingkungan kontainer Docker hanya mengevaluasi kondisi \textit{backend} yang homogen serta terpaku pada algoritma statis tanpa bobot seperti \textit{Round Robin} \citep{nurzaman2022analisis, ramadhani2026analysis}. Di sisi lain, penelitian yang menguji algoritma berbobot (\textit{Weighted Round Robin} dan \textit{Weighted Least Connections}) pada lingkungan heterogen umumnya diimplementasikan pada Virtual Private Server (VPS) atau mesin virtual terisolasi tanpa mempertimbangkan karakteristik isolasi kernel cgroups Docker \citep{rizqi2022analisis}. Ketidaksesuaian antara logika algoritma distribusi beban dan batasan kuota cgroups berpotensi memicu fenomena \textit{CPU throttling} akibat pembatasan Completely Fair Scheduler (CFS) kernel Linux \citep{shetty2025cpu}, penumpukan antrean koneksi (\textit{backlog}), dan lonjakan ekstrem pada latensi ekor (\textit{tail latency} persentil p95 dan p99) \citep{wodislawski2026ponytail, li2025tailbench}. Oleh karena itu, diperlukan penelitian komparatif yang menguji secara empiris dan terukur kinerja data-plane NGINX versus HAProxy pada lingkungan Docker dengan kapasitas heterogen.
+
+\section{Rumusan Masalah}
+Berdasarkan latar belakang masalah yang telah diuraikan, rumusan masalah dalam penelitian ini adalah sebagai berikut:
+\begin{enumerate}
+    \item Bagaimana perbandingan kinerja data-plane NGINX dan HAProxy menggunakan algoritma \textit{Round Robin}, \textit{Least Connections}, \textit{Weighted Round Robin}, dan \textit{Weighted Least Connections} pada kluster kontainer Docker dengan kapasitas \textit{backend} heterogen?
+    \item Bagaimana pengaruh karakteristik beban kerja intensif prosesor (\textit{CPU-bound}) dan beban kerja intensif masukan/keluaran (\textit{I/O-bound}) terhadap \textit{throughput}, latensi rata-rata, dan \textit{tail latency} (p95 dan p99) pada masing-masing mesin penyeimbang beban?
+    \item Sejauh mana presisi distribusi beban aktual yang dihasilkan oleh algoritma penyeimbang beban terhadap proporsi kapasitas kuota cgroups kontainer \textit{backend}?
+\end{enumerate}
+
+\section{Batasan Masalah}
+Agar penelitian ini terarah dan mencapai sasaran yang diharapkan, batasan masalah ditetapkan sebagai berikut:
+\begin{enumerate}
+    \item Perangkat lunak penyeimbang beban yang dievaluasi dibatasi pada NGINX \textit{Open Source} (versi stabil) dan HAProxy \textit{Community Edition}.
+    \item Algoritma penyeimbang beban yang diuji meliputi empat varian: \textit{Round Robin} (RR), \textit{Least Connections} (LC), \textit{Weighted Round Robin} (WRR), dan \textit{Weighted Least Connections} (WLC).
+    \item Lingkungan uji dibangun dengan kontainer Docker yang dikelola melalui Docker Compose pada sistem operasi Linux (kernel 6.x).
+    \item Heterogenitas kapasitas kontainer \textit{backend} disimulasikan menggunakan fitur cgroups dengan perbandingan rasio kapasitas vCPU dan RAM sebesar 1:2:4 (masing-masing 0.5 vCPU/256 MB, 1.0 vCPU/512 MB, dan 2.0 vCPU/1024 MB) yang merepresentasikan tingkatan ukuran instansi standar (\textit{cloud compute tiers}: \textit{Small}, \textit{Medium}, \textit{Large}).
+    \item Karakteristik pengujian beban dibagi menjadi dua kategori: \textit{endpoint} CPU-bound (komputasi intensif) dan \textit{endpoint} I/O-bound (penundaan I/O asinkron).
+    \item Alat uji beban (\textit{load testing tool}) menggunakan Grafana k6 dengan metrik utama: \textit{throughput} (req/s), \textit{mean latency}, \textit{p95/p99 tail latency}, dan \textit{error rate}.
+\end{enumerate}
+
+\section{Tujuan Penelitian}
+Tujuan yang hendak dicapai dalam pelaksanaan penelitian ini adalah:
+\begin{enumerate}
+    \item Menganalisis dan membandingkan performa NGINX dan HAProxy dalam menangani trafik HTTP pada lingkungan kontainer Docker berkapasitas heterogen.
+    \item Mengevaluasi efektivitas algoritma penjadwalan berbobot (WRR dan WLC) dibandingkan algoritma tanpa bobot (RR dan LC) terhadap pencegahan lonjakan \textit{tail latency} dan \textit{CPU throttling}.
+    \item Mengukur presisi distribusi trafik aktual untuk membuktikan kesesuaian antara alokasi bobot algoritma penyeimbang beban dengan kapasitas nyata kontainer \textit{backend}.
+\end{enumerate}
+
+\section{Manfaat Penelitian}
+Hasil dari penelitian ini diharapkan dapat memberikan manfaat sebagai berikut:
+\begin{enumerate}
+    \item \textbf{Manfaat Teoretis}: Memberikan kontribusi ilmiah dan literatur empiris mengenai interaksi kausal antara mesin proksi lapis data-plane (arsitektur \textit{multi-process} NGINX vs \textit{event-driven} HAProxy) dengan mekanisme isolasi cgroups kernel Linux pada kluster kontainer heterogen.
+    \item \textbf{Manfaat Praktis}: Menjadi panduan teknis bagi insinyur infrastruktur, praktisi \textit{DevOps}, dan arsitek sistem dalam memilih perangkat lunak penyeimbang beban serta menentukan algoritma distribusi yang optimal pada ekosistem komputasi awan berbasis kontainer.
+\end{enumerate}
+
+\section{Sistematika Penulisan}
+Sistematika penulisan laporan proposal skripsi ini disusun dalam tiga bab utama sebagai berikut:
+\begin{itemize}
+    \item \textbf{BAB I PENDAHULUAN}: Memaparkan latar belakang masalah, perumusan masalah, batasan masalah, tujuan penelitian, manfaat penelitian, serta sistematika penulisan.
+    \item \textbf{BAB II TINJAUAN PUSTAKA}: Menguraikan kajian literatur penelitian terdahulu yang relevan, dasar teori pendukung, serta kedudukan dan kebaruan penelitian.
+    \item \textbf{BAB III METODOLOGI PENELITIAN}: Memaparkan alur kerangka penelitian, perancangan arsitektur topologi sistem, spesifikasi sumber daya heterogen, matriks skenario pengujian, instrumen evaluasi data, serta jadwal pelaksanaan penelitian.
+\end{itemize}
